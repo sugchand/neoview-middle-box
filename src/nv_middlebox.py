@@ -10,9 +10,8 @@ __version__ = "1.0"
 import platform
 from nv_logger import nv_log_handler
 from daemonize import Daemonize
-from time import sleep
-
-nv_middlebox_pid = "/usr/local/var/run/nv-middlebox/nv_middlebox.pid"
+# Import all the configuration values
+from settings import NV_MID_BOX_APP_NAME, NV_MID_BOX_PID
 
 class nv_middlebox():
         def __init__(self):
@@ -22,14 +21,13 @@ class nv_middlebox():
             nv_log_handler.info("starting the middlebox")
             while True:
                 nv_log_handler.info("In loop")
-                sleep(10)
 
 if __name__ == "__main__":
     if platform.system() != 'Linux':
         nv_log_handler.error("Neoview Middlebox works only on Linux platform")
         exit(1)
     nv_mid_obj = nv_middlebox()
-    nv_daemon = Daemonize(app="nv-middle-box", pid=nv_middlebox_pid,
-                          action=nv_mid_obj.run, logger=nv_log_handler,
-                          foreground=True)
+    nv_daemon = Daemonize(app = NV_MID_BOX_APP_NAME, pid = NV_MID_BOX_PID,
+                          action = nv_mid_obj.run, logger = nv_log_handler,
+                          foreground = True)
     nv_daemon.start()

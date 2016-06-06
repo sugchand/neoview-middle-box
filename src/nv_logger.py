@@ -3,9 +3,13 @@
 # The logger module for nv-middlebox. 
 #
 # Every file must use logger module to log the information.
+__author__ = "Sugesh Chandran"
+__copyright__ = "Copyright (C) The neoview team."
+__license__ = "GNU Lesser General Public License"
+__version__ = "1.0"
+
 import logging
-log_level = logging.INFO
-nv_log_file = '/usr/local/var/log/nv-middlebox/nv_logger.log'
+from settings import NV_DEFAULT_LOG_LEVEL, NV_LOG_FILE, NV_LOG_FORMAT
 
 class nv_logger():
     '''
@@ -16,16 +20,15 @@ class nv_logger():
 
     def __init__(self):
         self.nv_log_obj = logging.getLogger()
-        self.nv_log_obj.setLevel(log_level)
-        log_format = logging.Formatter('%(asctime)s - %(levelname)s - '
-                                       '%(funcName)s - %(message)s')
-        log_fh = logging.FileHandler(nv_log_file)
-        log_fh.setLevel(log_level)
+        self.nv_log_obj.setLevel(NV_DEFAULT_LOG_LEVEL)
+        log_format = logging.Formatter(NV_LOG_FORMAT)
+        log_fh = logging.FileHandler(NV_LOG_FILE)
+        log_fh.setLevel(NV_DEFAULT_LOG_LEVEL)
         log_fh.setFormatter(log_format)
         self.nv_log_obj.addHandler(log_fh)
 
         log_ch = logging.StreamHandler()
-        log_ch.setLevel(log_level)
+        log_ch.setLevel(NV_DEFAULT_LOG_LEVEL)
         log_ch.setFormatter(log_format)
         self.nv_log_obj.addHandler(log_ch)
 
