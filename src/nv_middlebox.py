@@ -10,17 +10,22 @@ __version__ = "1.0"
 import platform
 from nv_logger import nv_log_handler
 from daemonize import Daemonize
+from nvdb.nvdb_manager import db_mgr_obj
 # Import all the configuration values
 from settings import NV_MID_BOX_APP_NAME, NV_MID_BOX_PID
 
 class nv_middlebox():
-        def __init__(self):
-            pass
+    def __init__(self):
+        pass
 
-        def run(self):
-            nv_log_handler.info("starting the middlebox")
-            while True:
-                nv_log_handler.info("In loop")
+    def init_db(self):
+        nv_log_handler.info("Initilizing the middlebox DB")
+        db_mgr_obj.setup_session()
+
+    def run(self):
+        nv_log_handler.info("starting the middlebox")
+        self.init_db()
+
 
 if __name__ == "__main__":
     if platform.system() != 'Linux':

@@ -17,6 +17,15 @@ NV_MID_BOX_PID = "/usr/local/var/run/nv-middlebox/nv_middlebox.pid"
 
 
 # nv-middle-box logging Settings
-NV_DEFAULT_LOG_LEVEL = logging.INFO
-NV_LOG_FILE = "/usr/local/var/log/nv-middlebox/nv_logger.log"
+NV_DEFAULT_LOG_LEVEL = logging.DEBUG
+NV_LOG_FILE = "/usr/local/var/log/nv-middlebox/nv_middlebox.log"
 NV_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
+
+
+#nv-middlebox db settings
+NVDB_SQLALCHEMY_DB = 'sqlite:///:memory:'
+
+#nv-middlebox database logging settings.
+NVDB_DEFAULT_LOG_LEVEL = logging.DEBUG
+NVDB_LOG_FILE = "/usr/local/var/log/nv-middlebox/nvdb.log"
+NVDB_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"

@@ -9,11 +9,12 @@ __license__ = "GNU Lesser General Public License"
 __version__ = "1.0"
 
 import logging
-from settings import NV_DEFAULT_LOG_LEVEL, NV_LOG_FILE, NV_LOG_FORMAT
+from settings import NV_DEFAULT_LOG_LEVEL, NV_LOG_FILE, NV_LOG_FORMAT, \
+                    NVDB_LOG_FORMAT, NVDB_DEFAULT_LOG_LEVEL, NVDB_LOG_FILE
 
 class nv_logger():
     '''
-    Wrapper class for the neoview middle box software. Make use the wrapper
+    Wrapper class for the neoview middle box logging. Make use the wrapper
     class than calling the logger directly
     '''
     nv_log_obj = None
@@ -35,4 +36,25 @@ class nv_logger():
     def get_logger(self):
         return self.nv_log_obj
 
+class nvdb_logger():
+    nvdb_log_obj = None
+
+    def __init__(self):
+        logging.basicConfig()
+        self.nvdb_log_obj = logging.getLogger('sqlalchemy')
+        nvdb_log_format = logging.Formatter(NVDB_LOG_FORMAT)
+        nvdb_log_fh = logging.FileHandler(NVDB_LOG_FILE)
+        nvdb_log_fh.setLevel(NVDB_DEFAULT_LOG_LEVEL)
+        nvdb_log_fh.setFormatter(nvdb_log_format)
+        self.nvdb_log_obj.addHandler(nvdb_log_fh)
+
+        nvdb_log_ch = logging.StreamHandler()
+        nvdb_log_ch.setLevel(NVDB_DEFAULT_LOG_LEVEL)
+        nvdb_log_ch.setFormatter(nvdb_log_format)
+        self.nvdb_log_obj.addHandler(nvdb_log_ch)
+
+    def get_logger(self):
+        return self.nvdb_log_obj
+
 nv_log_handler = nv_logger().get_logger()
+nvdb_log_handler = nvdb_logger().get_logger()
