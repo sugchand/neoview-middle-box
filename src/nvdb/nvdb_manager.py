@@ -3,6 +3,7 @@
 # The database manager module for nv-middlebox.
 #
 # Use this file to interact with DB.
+from email.policy import default
 
 __author__ = "Sugesh Chandran"
 __copyright__ = "Copyright (C) The neoview team."
@@ -23,26 +24,31 @@ class nv_midbox_system(db_base):
     The table model to store nv-middlebox system configurations
     '''
     __tablename__ = 'nv_midbox'
-    id = Column(Integer, primary_key = True)
+    sys_id = Column(Integer, primary_key = True)
     name = Column(String)
     # TODO :: More details to be added.
 
     def __repr__(self):
-        return "<nv_midbox_system(id=%d)>" % self.id
+        return "<nv_midbox_system(sys_id=%d)>" % self.sys_id
 
 class nv_camera(db_base):
     '''
     The table model to hold the camera parameters
     '''
     __tablename__ = 'nv_camera'
-    id = Column(Integer, primary_key = True)
+    cam_id = Column(Integer, primary_key = True)
     name = Column(String, nullable = False, unique = True)
     ip_addr = Column(Integer, nullable = False, unique = True)
     mac_addr = Column(String, nullable = False, unique = True)
-    port = Column(Integer, nullable = False)
+    listen_port = Column(Integer, nullable = False)
     username = Column(String, nullable = False)
     password = Column(String, nullable = False)
     src_protocol = Column(Integer)
+    # Number of streaming files
+    stream_file_cnt = Column(Integer, default = 0)
+    # The size of each stream file in seconds, default is 10 seconds 
+    stream_file_time_sec = Column(Integer, default = 10)
+    #Number of active connections to the camera.
     active_conn = Column(Integer,  default = 0)
     nv_midbox_id = Column(Integer,  ForeignKey('nv_midbox.id'))
     nv_midbox = relationship(nv_midbox_system,
@@ -51,11 +57,13 @@ class nv_camera(db_base):
                                             cascade='delete,all'))
 
     def __repr__(self):
-        return "<nv_camera(id=%d name='%s', ip_addr='%d', mac_addr='%s') \
-                port=%d, username=%s, password=%s, src_protocol=%d, \
-                active_conn=%d, nv_midbox_id=%d)>" % (self.id, self.name, \
-                self.ip_addr, self.mac_addr, self.port, \
+        return "<nv_camera(cam_id=%d name='%s', ip_addr='%d', mac_addr='%s') \
+                listen_port=%d, username=%s, password=%s, src_protocol=%d, \
+                stream_file_cnt=%d, stream_file_time_sec=%d, \
+                active_conn=%d, nv_midbox_id=%d)>" % (self.cam_id, self.name, \
+                self.ip_addr, self.mac_addr, self.listen_port, \
                 self.username, self.password, self.src_protocol, \
+                self.stream_file_cnt, self.stream_file_time_sec, \
                 self.active_conn, self.nv_midbox_id)
 
 

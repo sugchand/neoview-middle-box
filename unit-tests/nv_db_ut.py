@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # -*- coding: utf8 -*-
 # The UT test case functions for nv-db.
 #

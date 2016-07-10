@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # -*- coding: utf8 -*-
 # The global setting file for nv-middlebox.
 

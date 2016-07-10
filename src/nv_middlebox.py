@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # -*- coding: utf8 -*-
 # The middlebox software for remote camera management and relay streaming.
 #
