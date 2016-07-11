@@ -19,8 +19,8 @@ class nv_logger():
     '''
     nv_log_obj = None
 
-    def __init__(self):
-        self.nv_log_obj = logging.getLogger()
+    def __init__(self, class_name = ""):
+        self.nv_log_obj = logging.getLogger(class_name)
         self.nv_log_obj.setLevel(NV_DEFAULT_LOG_LEVEL)
         log_format = logging.Formatter(NV_LOG_FORMAT)
         log_fh = logging.FileHandler(NV_LOG_FILE)
@@ -56,5 +56,5 @@ class nvdb_logger():
     def get_logger(self):
         return self.nvdb_log_obj
 
-nv_log_handler = nv_logger().get_logger()
 nvdb_log_handler = nvdb_logger().get_logger()
+default_nv_log_handler = nv_logger(__name__).get_logger()

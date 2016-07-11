@@ -14,8 +14,8 @@ from sqlalchemy import create_engine
 from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
-from settings import NVDB_SQLALCHEMY_DB
-from nv_logger import nv_log_handler
+from src.settings import NVDB_SQLALCHEMY_DB
+from src.nv_logger import nv_logger
 
 db_base = declarative_base()
 
@@ -79,40 +79,41 @@ class db_manager():
     db_session = None
 
     def __init__(self):
+        self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.db_engine = create_engine(NVDB_SQLALCHEMY_DB)
         self.db_session_cls = sessionmaker(bind=self.db_engine)
         db_base.metadata.create_all(self.db_engine)
-        nv_log_handler.debug("Tables created in nvdb")
+        self.nv_log_handler.debug("Tables created in nvdb")
 
     def setup_session(self):
         if self.db_session is None:
-            nv_log_handler.debug("NULL db session, create a new one..")
+            self.nv_log_handler.debug("NULL db session, create a new one..")
             self.db_session = self.db_session_cls()
 
     def add_record(self, record_obj):
-        nv_log_handler.debug("Adding a new record")
+        self.nv_log_handler.debug("Adding a new record")
         self.db_session.add(record_obj)
 
     def db_commit(self):
-        nv_log_handler.debug("Committing the changes to DB.")
+        self.nv_log_handler.debug("Committing the changes to DB.")
         self.db_session.commit()
 
     def delete_record(self, record_obj):
-        nv_log_handler.debug("Delete a record from table")
+        self. nv_log_handler.debug("Delete a record from table")
         self.db_session.delete(record_obj)
 
     def clean_table(self, table_name):
         for row in self.db_session.query(table_name).all():
             self.db_session.delete(row)
-        nv_log_handler.debug("Cleaning the table %s", table_name.__name__)
+        self.nv_log_handler.debug("Cleaning the table %s", table_name.__name__)
 
     def get_tbl_record_cnt(self, table_name):
-        nv_log_handler.debug("Get number of records in %s",
+        self.nv_log_handler.debug("Get number of records in %s",
                                table_name.__name__)
         return self.db_session.query(table_name).count()
 
     def get_tbl_records(self, table_name):
-        nv_log_handler.debug("Collect all records in %s", table_name.__name__)
+        self.nv_log_handler.debug("Collect all records in %s", table_name.__name__)
         return self.db_session.query(table_name).all()
 
 
