@@ -30,9 +30,7 @@ class nv_linux_lib():
         if(len(args)):
             exec_cmd = exec_cmd + list(args)
 
-        exec_cmd = filter(None, exec_cmd)
-        self.nv_log_handler.debug("Excuting cmd:" + exec_cmd)
-        
+        self.nv_log_handler.debug("Excuting cmd: %s" %exec_cmd)
         try:
             out = subprocess.Popen(exec_cmd)
         except Exception as e:
@@ -47,15 +45,17 @@ class nv_linux_lib():
         '''
         fpath, _ = os.path.split(program)
         if fpath:
-            is_exe = os.path.isfile(fpath) and os.access(fpath, os.X_OK)(program)
+            is_exe = os.path.isfile(fpath) and os.access(fpath, os.X_OK)
             if is_exe:
                 return program
-            else:
-                for path in os.environ["PATH"].split(os.pathsep):
-                    path = path.strip('"')
-                    exe_file = os.path.join(path, program)
-                    if is_exe(exe_file):
-                        return exe_file
+        else:
+            for path in os.environ["PATH"].split(os.pathsep):
+                path = path.strip('"')
+                exe_file = os.path.join(path, program)
+                is_exe = os.path.isfile(exe_file) and os.access(exe_file, os.X_OK)
+                if is_exe:
+                    return exe_file
+                print(exe_file)
         return None
 
 class nv_os_lib():

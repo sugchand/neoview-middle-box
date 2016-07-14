@@ -9,7 +9,7 @@ __license__ = "GNU Lesser General Public License"
 __version__ = "1.0"
 
 import logging
-from settings import NV_DEFAULT_LOG_LEVEL, NV_LOG_FILE, NV_LOG_FORMAT, \
+from src.settings import NV_DEFAULT_LOG_LEVEL, NV_LOG_FILE, NV_LOG_FORMAT, \
                     NVDB_LOG_FORMAT, NVDB_DEFAULT_LOG_LEVEL, NVDB_LOG_FILE
 
 class nv_logger():

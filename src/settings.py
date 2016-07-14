@@ -20,7 +20,8 @@ NV_MID_BOX_CAM_STREAM_DIR = "/tmp"
 
 # nv-middle-box logging Settings
 NV_DEFAULT_LOG_LEVEL = logging.DEBUG
-NV_LOG_FILE = "/usr/local/var/log/nv-middlebox/nv_middlebox.log"
+#NV_LOG_FILE = "/usr/local/var/log/nv-middlebox/nv_middlebox.log"
+NV_LOG_FILE = "/tmp/nv_middlebox.log"
 NV_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
 
 
@@ -29,5 +30,6 @@ NVDB_SQLALCHEMY_DB = 'sqlite:///:memory:'
 
 #nv-middlebox database logging settings.
 NVDB_DEFAULT_LOG_LEVEL = logging.DEBUG
-NVDB_LOG_FILE = "/usr/local/var/log/nv-middlebox/nvdb.log"
+#NVDB_LOG_FILE = "/usr/local/var/log/nv-middlebox/nvdb.log"
+NVDB_LOG_FILE = "/tmp/nvdb.log"
 NVDB_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"

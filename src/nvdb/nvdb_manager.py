@@ -50,7 +50,7 @@ class nv_camera(db_base):
     stream_file_time_sec = Column(Integer, default = 10)
     #Number of active connections to the camera.
     active_conn = Column(Integer,  default = 0)
-    nv_midbox_id = Column(Integer,  ForeignKey('nv_midbox.id'))
+    nv_midbox_id = Column(Integer,  ForeignKey('nv_midbox.sys_id'))
     nv_midbox = relationship(nv_midbox_system,
                             backref=backref('nv_cameras',
                                             uselist=True,
