@@ -58,7 +58,9 @@ class cam_handler():
         self.os_context.make_dir(out_file_path)
         while True:
             # Camera streaming loop to stream from camera, cut and store in
-            # multiple files.
+            # multiple files. No error validation here, the files might be
+            # created without any video data. The restreaming server validates
+            # the files later.
             out_file = out_file_path +\
                     time.strftime("%d-%b-%Y:%H-%M-%S", time.gmtime()) + ".mp4"
             vlc_args = vlc_out_opts + [":sout=#file{dst=" + out_file + "}"]

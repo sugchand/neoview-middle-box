@@ -11,6 +11,7 @@ import platform
 from src.nv_logger import nv_logger
 import subprocess
 import os
+import shutil
 
 class nv_linux_lib():
     '''
@@ -23,6 +24,22 @@ class nv_linux_lib():
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
+    def remove_file(self, file_name):
+        try:
+            if os.path.exists(file_name):
+                os.remove(file_name)
+        except Exception as e:
+            self.nv_log_handler.error("Failed to remove file %s" %str(e))
+            raise e
+
+    def remove_dir(self, dir_name):
+        try:
+            if os.path.exists(dir_name):
+                shutil.rmtree(dir_name)
+        except Exception as e:
+            self.nv_log_handler.error("Failed to remove the directory %s"
+                                      %str(e))
+
     def execute_cmd(self, cmd, args):
         exec_cmd = []
         exec_cmd.append(cmd)
@@ -32,10 +49,14 @@ class nv_linux_lib():
 
         self.nv_log_handler.debug("Excuting cmd: %s" %exec_cmd)
         try:
-            out = subprocess.Popen(exec_cmd)
+            out = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
         except Exception as e:
             self.nv_log_handler.error("Failed to run the bash command, " + e)
-        out.wait()
+            raise e
+        else:
+            result, err = out.communicate()
+            return err
 
     def is_pgm_installed(self,program):
         '''
@@ -113,3 +134,15 @@ class nv_os_lib():
             self.nv_log_handler.error("Platform not defined.")
             raise ReferenceError("Undefined context, cannot find the program.")
         return self.context.make_dir(dir_name)
+
+    def remove_dir(self, dir_name):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+            raise ReferenceError("Undefined context, cannot remove dir.")
+        return self.context.remove_dir(dir_name)
+
+    def remove_file(self,file_name):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+            raise ReferenceError("Undefined context, cannot remove the file.")
+        return self.context.remove_file(file_name)
