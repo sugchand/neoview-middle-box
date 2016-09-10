@@ -66,3 +66,35 @@ class cam_handler():
             vlc_args = vlc_out_opts + [":sout=#file{dst=" + out_file + "}"]
             self.nv_log_handler.debug("Streaming  to a file %s" %str(vlc_args))
             self.os_context.execute_cmd("cvlc", vlc_args)
+
+    def add_camera(self, cam_entry):
+        '''
+        Add camera entry to a database. the cam_entry should be populated with
+        all the camara specific arguments.
+        '''
+        pass
+
+    def del_camera(self, cam_id):
+        '''
+        Delete a camera with id 'cam_id' from the DB
+        '''
+        pass
+
+    def start_camera_stream(self, cam_id):
+        '''
+        Start the camera streaming from the camera named 'cam_id'
+        '''
+        pass
+
+    def stop_camera_stream(self, cam_id):
+        '''
+        Stop the camera streaming of camera with id 'cam_id'
+        '''
+        pass
+
+    def get_camid_by_name(self, cam_name):
+        '''
+        Find the camera ID for a camera with given name. Its expected the camera
+        names has to be unique. Otherwise the result is undetermined.
+        '''
+        pass
