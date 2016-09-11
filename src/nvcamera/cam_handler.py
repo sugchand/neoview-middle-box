@@ -13,6 +13,7 @@ from src.nv_lib.nv_os_lib import nv_os_lib
 import time
 import ipaddress
 from src.settings import NV_MID_BOX_CAM_STREAM_DIR
+from threading import Thread
 
 class cam_handler():
     #Stream count used to specify the current file to stream out.
@@ -34,12 +35,14 @@ class cam_handler():
         
         self.curr_stream_cnt = 0
         self.cam_dir = str(cam_tbl_entry.cam_id)
+        self.cam_id = self.cam_dir
         self.username = cam_tbl_entry.username
         self.pwd = cam_tbl_entry.password
         self.cam_ip = str(ipaddress.IPv4Address(cam_tbl_entry.ip_addr))
         self.cam_listen_port = str(cam_tbl_entry.listen_port)
         self.os_context = nv_os_lib()
-        self.nv_log_handler.debug("Initialized the camera handler thread.")
+        self.nv_log_handler.debug("Initialized the camera handler.")
+        self.cam_thread_obj = None
 
     def save_camera_stream_in_multifile(self):
         cam_src_path = ["rtsp://" + self.username + ":" + self.pwd + "@" +\
@@ -74,23 +77,36 @@ class cam_handler():
         '''
         pass
 
-    def del_camera(self, cam_id):
+    def del_camera(self):
         '''
-        Delete a camera with id 'cam_id' from the DB
-        '''
-        pass
-
-    def start_camera_stream(self, cam_id):
-        '''
-        Start the camera streaming from the camera named 'cam_id'
+        Delete a camera with id specified by cam_id from the DB
         '''
         pass
 
-    def stop_camera_stream(self, cam_id):
+    def start_camera_thread(self):
+        '''
+        Start the camera streaming from the camera named cam_id
+        '''
+        if self.cam_thread_obj:
+            self.nv_log_handler.error("Cannot start streaming thread, " 
+                                        "its already exists")
+            return
+        self.cam_thread_obj = Thread(name=self.cam_id,
+                              target=self.save_camera_stream_in_multifile())
+        self.cam_thread_obj.start()
+
+    def stop_camera_thread(self):
         '''
         Stop the camera streaming of camera with id 'cam_id'
         '''
-        pass
+        self.cam_thread_obj.stop()
+
+    def join_camera_thread(self):
+        '''
+        Wait for camera streamer thread to join in the main thread.
+        '''
+        if self.cam_thread_obj is not None:
+            self.cam_thread_obj.join()
 
     def get_camid_by_name(self, cam_name):
         '''

@@ -7,7 +7,7 @@ __copyright__ = "Copyright (C) The neoview team."
 __license__ = "GNU Lesser General Public License"
 __version__ = "1.0"
 
-cam_thread_list = []
+cam_thread_list = {}
 
 class thread_manager():
     '''
@@ -19,12 +19,12 @@ class thread_manager():
         # Initialize the thread manager.
         pass
 
-    def start_camera_thread(self):
+    def start_camera_thread(self,cam_id):
         # Create a thread for camera stream handling if not exists
         # Store the thread details in the global list.
         pass
 
-    def stop_camera_thread(self, thread):
+    def stop_camera_thread(self, cam_id):
         # Destroy the camera thread that created earlier.
         pass
 
@@ -32,7 +32,11 @@ class thread_manager():
         # Destroy all the threads that created by the thread manager.
         pass
 
-    def start_camera_threads(self):
+    def start_all_camera_threads(self):
         # Read camera DB for each camera entry.
         # create handler thread for each entry and store it in the thread list.
         # function get called while initilizing.
+        pass
+
+    def join_camera_thread(self,cam_id):
+        pass 

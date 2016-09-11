@@ -27,9 +27,11 @@ class relay_ftp_handler():
 
     def local_file_transfer(self, nv_cam_src, dst):
         # Copy the file nv_cam_src to dst.
+        pass
 
     def remote_file_transfer(self, nv_cam_src, dst):
         # Copy the file remotely.
+        pass
 
     def is_webserver_local(self, webserver):
         '''
@@ -59,7 +61,7 @@ class relay_watcher(FileSystemEventHandler):
             path/to/observed/file
         """
         # the file will be processed there
-        print event.src_path, event.event_type  # print now only for degug
+        print(event.src_path, event.event_type)  # print now only for degug
 
     def on_modified(self, event):
         self.process(event)
@@ -86,11 +88,11 @@ class relay_main():
 
     def process_relay(self):
         self.observer_obj.schedule(self.watcher_obj, NV_MID_BOX_CAM_STREAM_DIR,
-                                   recursive=True))
+                                   recursive=True)
         self.observer_obj.start()
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            observer.stop()
+
+    def relay_stop(self):
+        self.observer_obj.stop()
+
+    def relay_join(self):
         self.observer_obj.join()
