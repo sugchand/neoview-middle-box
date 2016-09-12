@@ -61,22 +61,24 @@ class relay_watcher(FileSystemEventHandler):
             path/to/observed/file
         """
         # the file will be processed there
-        print(event.src_path, event.event_type)  # print now only for degug
+    #    print(event.src_path, event.event_type)  # print now only for degug
 
-    def on_modified(self, event):
-        self.process(event)
+    #def on_modified(self, event):
+    #    self.process(event)
 
     def on_created(self, event):
         # Check if the webserver local, copy the file to a specified location
         if self.is_local_wbs:
-            print("local copy")
-        self.process(event)
+            print("local copy %s" % event.src_path)
+            cam_src_path = event.src_path
+            self.ftp_obj.local_file_transfer(cam_src_path, None)
+    #    self.process(event)
 
-    def on_deleted(self,event):
-        self.process(event)
+    #def on_deleted(self,event):
+    #    self.process(event)
 
-    def on_any_event(self,event):
-        self.process(event)
+    #def on_any_event(self,event):
+    #    self.process(event)
 
 class relay_main():
     '''

@@ -23,7 +23,7 @@ def nv_test_camera_stream_in():
                                name = 'camera 1',
                                ip_addr = int(ipaddress.IPv4Address('192.168.192.32')),
                                mac_addr = "00:00:00:00:00:01",
-                               listen_port = 554,
+                               listen_port = 9000,
                                stream_file_time_sec = 30,
                                username = 'admin',
                                password = 'sugu&deepu',

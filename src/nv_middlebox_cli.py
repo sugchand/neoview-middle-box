@@ -76,6 +76,7 @@ class nv_middlebox_cli(threading.Thread):
             try:
                 res = self.do_execute_nv_midbox_cli()
                 if res == -1:
+                    self.cam_thread_mgr.stop_all_camera_threads()
                     break
             except KeyboardInterrupt:
                 self.cam_thread_mgr.stop_all_camera_threads()
@@ -88,18 +89,28 @@ class nv_middlebox_cli(threading.Thread):
                                       "Cannot add a Camera")
             return
         # TODO :: Validate user inputs for right input data,
-        cam_name = (input("Enter Camera Name: "))
-        cam_ip = (input("Enter Camera IP Address: "))
-        cam_mac = (input("Enter Camera MAC Address: "))
-        cam_listen_port = (input("Enter Camera Listen port: "))
-        cam_uname = (input("Enter Camera User name: "))
-        cam_pwd = (input("Enter Camera password: "))
+        #cam_name = (input("Enter Camera Name: "))
+        #cam_ip = (input("Enter Camera IP Address: "))
+        #cam_mac = (input("Enter Camera MAC Address: "))
+        #cam_listen_port = (input("Enter Camera Listen port: "))
+        #cam_uname = (input("Enter Camera User name: "))
+        #cam_pwd = (input("Enter Camera password: "))
+        ### TODO ::: STATIV values , remove it #####
+        cam_name = 'camera-1'
+        cam_ip = int(ipaddress.IPv4Address('192.168.192.32'))
+        cam_mac = "00:00:00:00:00:01"
+        cam_listen_port = 9000
+        time_len = 30
+        cam_uname = 'admin'
+        cam_pwd = 'sugu&deepu'
+        #########################
+
         cam_entry = nv_camera(cam_id = (uuid.uuid4().int>>64) & 0xFFFFFFFF,
                                name = cam_name,
                                ip_addr = int(ipaddress.IPv4Address(cam_ip)),
                                mac_addr = cam_mac,
                                listen_port = cam_listen_port,
-                               stream_file_time_sec = 30,
+                               stream_file_time_sec = time_len,
                                username = cam_uname,
                                password = cam_pwd,
                                nv_midbox = nv_midbox_db_entry
@@ -107,7 +118,6 @@ class nv_middlebox_cli(threading.Thread):
         db_mgr_obj.add_record(cam_entry)
         db_mgr_obj.db_commit()
         self.nv_log_handler.debug("Added a new camera %s to DB" % cam_name)
-        pass
 
     def nv_midbox_del_camera(self):
         cam_name = "None"
@@ -115,10 +125,22 @@ class nv_middlebox_cli(threading.Thread):
         pass
 
     def nv_midbox_start_stream(self):
-        cam_name = "None"
+        # TODO :: Validate the camera name
+        cam_name = (input("Enter Camera Name: "))
+        filter_arg = {'name' : cam_name}
+        cam_cnt = db_mgr_obj.get_tbl_records_filterby_cnt(nv_camera, filter_arg)
+        if cam_cnt == 0:
+            self.nv_log_handler.error("No record found with given name %s"
+                                      % cam_name)
+            return
+        if cam_cnt > 1:
+            self.nv_log_handler.error("Exiting, More than one record found"
+                                      " with same name %s" % cam_name)
+            return
+        cam_record = db_mgr_obj.get_tbl_records_filterby(nv_camera, filter_arg)[0]
+        self.cam_thread_mgr.start_camera_thread(cam_record)
         self.nv_log_handler.debug("staring the stream recording on camera %s"
                                   % cam_name)
-        pass
 
     def nv_midbox_stop_stream(self):
         cam_name = None

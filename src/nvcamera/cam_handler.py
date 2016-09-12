@@ -11,6 +11,7 @@ from src.nv_logger import nv_logger
 from src.nvdb.nvdb_manager import nv_camera
 from src.nv_lib.nv_os_lib import nv_os_lib
 import time
+from time import sleep
 import ipaddress
 from src.settings import NV_MID_BOX_CAM_STREAM_DIR
 from threading import Thread
@@ -52,9 +53,9 @@ class cam_handler():
                         "--live-caching=8", #"--rt-priority",
                        "--stop-time=" +
                         str(self.time_lapse)]
-        if self.os_context.is_pgm_installed('cvlc') is None:
-            #The cvlc not found.
-            self.nv_log_handler.error("cvlc not installed, cannot stream")
+        if self.os_context.is_pgm_installed('vlc-wrapper') is None:
+            #The vlc-wrapper is not found.
+            self.nv_log_handler.error("vlc-wrapper not installed, cannot stream")
             return
         out_file_path = NV_MID_BOX_CAM_STREAM_DIR.rstrip('/') + "/" +\
                         self.cam_dir + "/"
@@ -68,7 +69,7 @@ class cam_handler():
                     time.strftime("%d-%b-%Y:%H-%M-%S", time.gmtime()) + ".mp4"
             vlc_args = vlc_out_opts + [":sout=#file{dst=" + out_file + "}"]
             self.nv_log_handler.debug("Streaming  to a file %s" %str(vlc_args))
-            self.os_context.execute_cmd("cvlc", vlc_args)
+            self.os_context.execute_cmd("vlc-wrapper", vlc_args)
 
     def add_camera(self, cam_entry):
         '''
@@ -93,6 +94,7 @@ class cam_handler():
             return
         self.cam_thread_obj = Thread(name=self.cam_id,
                               target=self.save_camera_stream_in_multifile())
+        self.cam_thread_obj.daemon = True
         self.cam_thread_obj.start()
 
     def stop_camera_thread(self):

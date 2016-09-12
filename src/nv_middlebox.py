@@ -15,7 +15,7 @@ curr_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.abspath(os.path.join(curr_dir, os.pardir)))
 
 from src.nv_logger import nv_logger,default_nv_log_handler
-from src.nvdb.nvdb_manager import db_mgr_obj, nv_midbox_system 
+from src.nvdb.nvdb_manager import db_mgr_obj
 # Import all the configuration values
 from src.nvrelay.relay_handler import relay_main
 from src.nv_middlebox_cli import nv_middlebox_cli

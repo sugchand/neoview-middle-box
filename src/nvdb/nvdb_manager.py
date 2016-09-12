@@ -101,6 +101,10 @@ class db_manager():
             self.nv_log_handler.error("Can't create system record, "
                                       "DB session is not initialized")
             return
+        if self.nv_midbox_db_entry is not None:
+            self.nv_log_handler.error("Cannot create multiple system entry for"
+                                      "same machine")
+            return
         sys_id = (uuid.uuid4().int>>64) & 0xFFFFFFFF
         self.nv_midbox_db_entry = nv_midbox_system(sys_id = sys_id,
                                       name = NV_MID_BOX_APP_NAME)
@@ -137,4 +141,24 @@ class db_manager():
         self.nv_log_handler.debug("Collect all records in %s", table_name.__name__)
         return self.db_session.query(table_name).all()
 
+    def get_tbl_records_filterby(self, table_name, kwargs):
+        '''
+        the kwargs must be dictionary, for eg: to get all the records matches
+        a name the kwargs will be
+        kwargs = {'name' : 'sugu'}
+        '''
+        self.nv_log_handler.debug("Collect records using filter %s"
+                                  % ' '.join(list(kwargs)))
+        return self.db_session.query(table_name).filter_by(**kwargs).all()
+    def get_tbl_records_filterby_cnt(self, table_name, kwargs):
+        '''
+        the kwargs must be dictionary, for eg: to get all the records matches
+        a name the kwargs will be
+        kwargs = {'name' : 'sugu'}
+        '''
+        self.nv_log_handler.debug("Collect records using filter %s"
+                                  % ' '.join(list(kwargs)))
+        return self.db_session.query(table_name).filter_by(**kwargs).count()
+
 db_mgr_obj = db_manager()
+
