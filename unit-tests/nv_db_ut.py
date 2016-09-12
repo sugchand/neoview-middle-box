@@ -14,10 +14,10 @@ import ipaddress
 
 def setup_src_path():
     curr_dir = os.path.dirname(os.path.realpath(__file__))
-    sys.path.append(os.path.abspath(os.path.join(curr_dir, os.pardir)) + "/src")
+    sys.path.append(os.path.abspath(os.path.join(curr_dir, os.pardir)))
 
 def setup_db_ut():
-    from nvdb.nvdb_manager import db_mgr_obj, nv_camera, nv_midbox_system
+    from src.nvdb.nvdb_manager import db_mgr_obj, nv_camera, nv_midbox_system
     db_mgr_obj.setup_session()
     print("Neoview Midbox system table record count %d"
           % db_mgr_obj.get_tbl_record_cnt(nv_midbox_system))
@@ -25,21 +25,21 @@ def setup_db_ut():
            % db_mgr_obj.get_tbl_record_cnt(nv_camera))
 
     sys_id = (uuid.uuid4().int>>64) & 0xFFFFFFFF
-    nv_sys_record = nv_midbox_system(id = sys_id, name = "nv-system1")
-    nv_cam_record1 = nv_camera(id = (uuid.uuid4().int>>64) & 0xFFFFFFFF,
+    nv_sys_record = nv_midbox_system(sys_id = sys_id, name = "nv-system1")
+    nv_cam_record1 = nv_camera(cam_id = (uuid.uuid4().int>>64) & 0xFFFFFFFF,
                                name = 'camera 1',
                                ip_addr = int(ipaddress.IPv4Address('10.10.10.1')),
                                mac_addr = "00:00:00:00:00:01",
-                               port = 1234,
+                               listen_port = 1234,
                                username = 'test',
                                password = 'test123',
                                nv_midbox = nv_sys_record
                                )
-    nv_cam_record2 = nv_camera(id = (uuid.uuid4().int>>64) & 0xFFFFFFFF,
+    nv_cam_record2 = nv_camera(cam_id = (uuid.uuid4().int>>64) & 0xFFFFFFFF,
                                name = 'camera 2',
                                ip_addr = int(ipaddress.IPv4Address('10.10.10.2')),
                                mac_addr = "00:00:00:00:00:02",
-                               port = 1234,
+                               listen_port = 1234,
                                username = 'test',
                                password = 'test123',
                                nv_midbox = nv_sys_record

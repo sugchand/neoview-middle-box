@@ -8,37 +8,32 @@ __license__ = "GNU Lesser General Public License"
 __version__ = "1.0"
 
 import platform
-from daemonize import Daemonize
 import sys
 import os
-
 
 curr_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.abspath(os.path.join(curr_dir, os.pardir)))
 
 from src.nv_logger import nv_logger,default_nv_log_handler
-from src.nvdb.nvdb_manager import db_mgr_obj
+from src.nvdb.nvdb_manager import db_mgr_obj, nv_midbox_system 
 # Import all the configuration values
-from src.settings import NV_MID_BOX_APP_NAME, NV_MID_BOX_PID
 from src.nvrelay.relay_handler import relay_main
 from src.nv_middlebox_cli import nv_middlebox_cli
-from src.nv_lib.nv_os_lib import nv_os_lib
 
 class nv_middlebox():
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.nv_relay_mgr =  None # Thread to copy files to dst webserver
         self.nv_cli_mgr = None # Cli thread to read user inputs.
-        self.os_context = nv_os_lib()
-        pid_dir = os.path.dirname(os.path.realpath(NV_MID_BOX_PID))
-        self.os_context.make_dir(pid_dir)
 
     def init_db(self):
         self.nv_log_handler.info("Initilizing the middlebox DB")
         db_mgr_obj.setup_session()
+        db_mgr_obj.create_system_record()
 
     def run(self):
         try:
+            sys.tracebacklimit=0
             self.nv_log_handler.info("starting the middlebox")
             self.init_db()
             self.nv_relay_mgr = relay_main()
@@ -49,8 +44,9 @@ class nv_middlebox():
             self.nv_cli_mgr.stop()
             self.nv_relay_mgr.stop()
         else:
+            # Wait only for the user interface thread.
             self.nv_cli_mgr.join()
-            self.nv_relay_mgr.relay_join()
+        self.nv_relay_mgr.relay_stop()
 
 if __name__ == "__main__":
     if platform.system() != 'Linux':
@@ -58,13 +54,9 @@ if __name__ == "__main__":
                                      "platform")
         exit(1)
     nv_mid_obj = nv_middlebox()
-    nv_daemon = Daemonize(app = NV_MID_BOX_APP_NAME, pid = NV_MID_BOX_PID,
-                         action = nv_mid_obj.run,
-                         logger = nv_mid_obj.nv_log_handler,
-                         foreground = True)
     try:
-        nv_daemon.start()
+        nv_mid_obj.run()
     except KeyboardInterrupt:
-        nv_daemon.stop()
-    else:
-        nv_daemon.join()
+        exit(0)
+    except Exception as e:
+        default_nv_log_handler.error("Exiting with exception %s" %str(e))

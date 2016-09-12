@@ -28,10 +28,10 @@ class nv_logger():
         log_fh.setFormatter(log_format)
         self.nv_log_obj.addHandler(log_fh)
 
-        log_ch = logging.StreamHandler()
-        log_ch.setLevel(NV_DEFAULT_LOG_LEVEL)
-        log_ch.setFormatter(log_format)
-        self.nv_log_obj.addHandler(log_ch)
+        #log_ch = logging.StreamHandler()
+        #log_ch.setLevel(NV_DEFAULT_LOG_LEVEL)
+        #log_ch.setFormatter(log_format)
+        #self.nv_log_obj.addHandler(log_ch)
 
     def get_logger(self):
         return self.nv_log_obj
@@ -48,10 +48,10 @@ class nvdb_logger():
         nvdb_log_fh.setFormatter(nvdb_log_format)
         self.nvdb_log_obj.addHandler(nvdb_log_fh)
 
-        nvdb_log_ch = logging.StreamHandler()
-        nvdb_log_ch.setLevel(NVDB_DEFAULT_LOG_LEVEL)
-        nvdb_log_ch.setFormatter(nvdb_log_format)
-        self.nvdb_log_obj.addHandler(nvdb_log_ch)
+        #nvdb_log_ch = logging.StreamHandler()
+        #nvdb_log_ch.setLevel(NVDB_DEFAULT_LOG_LEVEL)
+        #nvdb_log_ch.setFormatter(nvdb_log_format)
+        #self.nvdb_log_obj.addHandler(nvdb_log_ch)
 
     def get_logger(self):
         return self.nvdb_log_obj

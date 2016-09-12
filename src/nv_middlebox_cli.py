@@ -8,8 +8,12 @@ __license__ = "GNU Lesser General Public License"
 __version__ = "1.0"
 
 import threading
+import uuid
+import ipaddress
 from src.nvcamera.thread_manager import thread_manager
 from src.nv_logger import nv_logger
+from src.nvdb.nvdb_manager import db_mgr_obj, nv_midbox_system
+from src.nvdb.nvdb_manager import nv_camera
 try:
     from termcolor import colored
 except ImportError:
@@ -21,6 +25,7 @@ NV_MIDBOX_CLI_FNS = {
                 "START-CAMERA-STREAM" : "nv_midbox_start_stream",
                 "STOP-CAMERA-STREAM" : "nv_midbox_stop_stream",
                 "LIST-ALL-CAMERAS" : "nv_midbox_list_cameras",
+                "LIST-SYSTEM" : "list_midbox_system",
                 "QUIT-MIDBOX" : "nv_midbox_stop"
                     }
 
@@ -35,6 +40,7 @@ class nv_middlebox_cli(threading.Thread):
         self.cam_thread_mgr = thread_manager()
 
     def run(self):
+        db_mgr_obj.setup_session()
         self.nv_middlebox_cli_main()
 
     def stop(self):
@@ -57,7 +63,7 @@ class nv_middlebox_cli(threading.Thread):
 
         quit_key = list(NV_MIDBOX_CLI_FNS.keys()).index('QUIT-MIDBOX')
         if choice is quit_key:
-            self.cam_thread_mgr.stop()
+            self.cam_thread_mgr.stop_all_camera_threads()
             return -1
 
         fn = list(NV_MIDBOX_CLI_FNS.values())[choice]
@@ -76,7 +82,30 @@ class nv_middlebox_cli(threading.Thread):
                 break
 
     def nv_midbox_add_camera(self):
-        cam_name = "None"
+        nv_midbox_db_entry = db_mgr_obj.get_own_system_record()
+        if nv_midbox_db_entry is None:
+            self.nv_log_handler.error("System table is not available, "
+                                      "Cannot add a Camera")
+            return
+        # TODO :: Validate user inputs for right input data,
+        cam_name = (input("Enter Camera Name: "))
+        cam_ip = (input("Enter Camera IP Address: "))
+        cam_mac = (input("Enter Camera MAC Address: "))
+        cam_listen_port = (input("Enter Camera Listen port: "))
+        cam_uname = (input("Enter Camera User name: "))
+        cam_pwd = (input("Enter Camera password: "))
+        cam_entry = nv_camera(cam_id = (uuid.uuid4().int>>64) & 0xFFFFFFFF,
+                               name = cam_name,
+                               ip_addr = int(ipaddress.IPv4Address(cam_ip)),
+                               mac_addr = cam_mac,
+                               listen_port = cam_listen_port,
+                               stream_file_time_sec = 30,
+                               username = cam_uname,
+                               password = cam_pwd,
+                               nv_midbox = nv_midbox_db_entry
+                               )
+        db_mgr_obj.add_record(cam_entry)
+        db_mgr_obj.db_commit()
         self.nv_log_handler.debug("Added a new camera %s to DB" % cam_name)
         pass
 
@@ -96,9 +125,23 @@ class nv_middlebox_cli(threading.Thread):
         self.nv_log_handler.debug("Stop streaming on camera %s" %cam_name)
         pass
 
+    def list_midbox_system(self):
+        if not db_mgr_obj.get_tbl_record_cnt(nv_midbox_system):
+            print_color_string("No record found in system table", color='red')
+            self.nv_log_handler.debug("Empty system table in the DB")
+            return
+        sys_record = db_mgr_obj.get_tbl_records(nv_midbox_system)
+        print_color_string(sys_record, color = "green")
+        self.nv_log_handler.debug("Listing system details the DB")
+
     def nv_midbox_list_cameras(self):
+        if not db_mgr_obj.get_tbl_record_cnt(nv_camera):
+            print_color_string("No camera record found in the system", color='red')
+            self.nv_log_handler.debug("Camera table empty in the system")
+            return
+        cam_records = db_mgr_obj.get_tbl_records(nv_camera)
+        print_color_string(cam_records, color = "green")
         self.nv_log_handler.debug("Listing all the cameras in the DB")
-        pass
 
     def nv_midbox_stop(self):
         self.nv_log_handler.debug("Quit the middlebox")
