@@ -35,6 +35,18 @@ class relay_ftp_handler():
         '''
         self.copy_file_list = [[None, None], [None, None]]
 
+    def is_file_to_copy_valid(self, file_path):
+        '''
+        Function to validate if the file_path is a corrupted file or not.
+        For now we assume if the file size is greater than 10MB its good to go,
+        though its not an right assumption.
+        '''
+        ten_mb = 10000000 # 10MB in Bytes
+        file_size = self.os_context.get_filesize_in_bytes(file_path)
+        if file_size < ten_mb:
+            return False
+        return True
+
     def enqeue_copy_file_list(self, src, dst):
         '''
         NOTE ::: the list is not thread safe. Its responsibility of caller to
@@ -50,6 +62,8 @@ class relay_ftp_handler():
         copy_path = self.copy_file_list[self.copy_selector]
         if not copy_path[0]:
             return
+        self.nv_log_handler.debug("Copying file %s to %s"% \
+                                  (copy_path[0], copy_path[1]))
         self.os_context.copy_file(copy_path[0], copy_path[1])
         # Reset the data after copying.
         self.copy_file_list[self.copy_selector] = [None, None]
@@ -70,7 +84,7 @@ class relay_ftp_handler():
             self.nv_log_handler.debug("Create the directory %s" % dst_dir)
             self.os_context.make_dir(dst_dir)
         self.enqeue_copy_file_list(nv_cam_src, dst_dir)
-        self.nv_log_handler.debug("Copied file %s to %s" %(nv_cam_src, dst_dir))
+        self.nv_log_handler.debug("Enqueued file %s to %s" %(nv_cam_src, dst_dir))
 
     def remote_file_transfer(self, nv_cam_src, webserver):
         # Copy the file remotely.

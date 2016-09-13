@@ -115,7 +115,7 @@ class nv_middlebox_cli(threading.Thread):
         cam_ip = int(ipaddress.IPv4Address('192.168.192.32'))
         cam_mac = "00:00:00:00:00:01"
         cam_listen_port = 9000
-        time_len = 30
+        time_len = 60
         cam_uname = 'admin'
         cam_pwd = 'sugu&deepu'
         #########################

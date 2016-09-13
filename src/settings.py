@@ -19,7 +19,7 @@ NV_MID_BOX_CAM_STREAM_DIR = "/tmp"
 
 
 # nv-middle-box logging Settings
-NV_DEFAULT_LOG_LEVEL = logging.DEBUG
+NV_DEFAULT_LOG_LEVEL = logging.ERROR
 #NV_LOG_FILE = "/usr/local/var/log/nv-middlebox/nv_middlebox.log"
 NV_LOG_FILE = "/tmp/nv_middlebox.log"
 NV_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"

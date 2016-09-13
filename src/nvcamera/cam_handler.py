@@ -50,12 +50,12 @@ class cam_handler():
                         self.cam_ip + ":" + self.cam_listen_port]
         vlc_out_opts = cam_src_path +\
                        ["--no-loop", "--no-repeat", "--play-and-exit",
-                        "--live-caching=8", #"--rt-priority",
+                        "--live-caching=3000", #"--rt-priority",
                        "--stop-time=" +
                         str(self.time_lapse)]
-        if self.os_context.is_pgm_installed('vlc-wrapper') is None:
-            #The vlc-wrapper is not found.
-            self.nv_log_handler.error("vlc-wrapper not installed, cannot stream")
+        if self.os_context.is_pgm_installed('cvlc') is None:
+            #The cvlc is not found.
+            self.nv_log_handler.error("cvlc not installed, cannot stream")
             return
         out_file_path = NV_MID_BOX_CAM_STREAM_DIR.rstrip('/') + "/" +\
                         self.cam_dir + "/"
@@ -69,7 +69,7 @@ class cam_handler():
                     time.strftime("%d-%b-%Y:%H-%M-%S", time.gmtime()) + ".mp4"
             vlc_args = vlc_out_opts + [":sout=#file{dst=" + out_file + "}"]
             self.nv_log_handler.debug("Streaming  to a file %s" %str(vlc_args))
-            self.os_context.execute_cmd("vlc-wrapper", vlc_args)
+            self.os_context.execute_cmd("cvlc", vlc_args)
 
     def add_camera(self, cam_entry):
         '''

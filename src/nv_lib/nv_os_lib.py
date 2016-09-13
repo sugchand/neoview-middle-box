@@ -92,6 +92,10 @@ class nv_linux_lib():
         '''
         return os.path.join(src_dir, new_dir)
 
+    def get_filesize_in_bytes(self, file_path):
+        stat_info = os.stat(file_path)
+        return stat_info.st_size
+
     def is_pgm_installed(self,program):
         '''
         Check if the program installed on the machine.
@@ -110,7 +114,6 @@ class nv_linux_lib():
                 is_exe = os.path.isfile(exe_file) and os.access(exe_file, os.X_OK)
                 if is_exe:
                     return exe_file
-                print(exe_file)
         return None
 
 class nv_os_lib():
@@ -210,3 +213,8 @@ class nv_os_lib():
         if self.context is None:
             self.nv_log_handler.error("Platform not defined.")
         return self.context.join_dir(src_dir, new_dir)
+
+    def get_filesize_in_bytes(self, file_path):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.get_filesize_in_bytes(file_path)
