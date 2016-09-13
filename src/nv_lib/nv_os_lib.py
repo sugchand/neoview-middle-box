@@ -58,6 +58,40 @@ class nv_linux_lib():
             result, err = out.communicate()
             return err
 
+    def is_path_exists(self, path):
+        return os.path.exists(path)
+
+    def get_dirname(self, path):
+        '''
+        Get the directory name for the specified path
+        '''
+        return os.path.dirname(path)
+
+    def copy_file(self, src_file, dst_dir):
+        shutil.copy(src_file, dst_dir)
+
+    def get_parent_dir(self, file_path):
+        return os.path.dirname(file_path)
+
+    def get_last_filename(self, file_path):
+        '''
+        Find the last file name of a file.
+        It returns only last level file name,
+        for eg: /tmp/tmp2/dir will return 'dir'
+        '''
+        file_dir = os.path.dirname(file_path)
+        if not file_dir:
+            return None
+        return os.path.relpath(file_path, file_dir)
+
+    def join_dir(self, src_dir, new_dir):
+        '''
+        Join new_dir to dir. for eg:
+        dir = /tmp, new_dir = test
+        the result will be /tmp/test
+        '''
+        return os.path.join(src_dir, new_dir)
+
     def is_pgm_installed(self,program):
         '''
         Check if the program installed on the machine.
@@ -146,3 +180,33 @@ class nv_os_lib():
             self.nv_log_handler.error("Platform not defined.")
             raise ReferenceError("Undefined context, cannot remove the file.")
         return self.context.remove_file(file_name)
+
+    def is_path_exists(self, path):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.is_path_exists(path)
+
+    def get_dirname(self, path):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.get_dirname(path)
+
+    def copy_file(self, src_path, dst_dir):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.copy_file(src_path, dst_dir)
+
+    def get_last_filename(self, file_path):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.get_last_filename(file_path)
+
+    def get_parent_dir(self, file_path):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.get_parent_dir(file_path)
+
+    def join_dir(self, src_dir, new_dir):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.join_dir(src_dir, new_dir)

@@ -3,6 +3,7 @@
 # The database manager module for nv-middlebox.
 #
 # Use this file to interact with DB.
+from email.policy import default
 
 __author__ = "Sugesh Chandran"
 __copyright__ = "Copyright (C) The neoview team."
@@ -32,6 +33,19 @@ class nv_midbox_system(db_base):
 
     def __repr__(self):
         return "<nv_midbox_system(sys_id=%d)>" % self.sys_id
+
+class nv_webserver_system(db_base):
+    '''
+    The table to hold the webserver credentials.
+    '''
+    __tablename__ = 'nv_webserver'
+    server_id = Column(Integer, primary_key = True)
+    name = Column(String, nullable = False, default = 'localhost')
+    video_path = Column(String, nullable = False)
+
+    def __repr__(self):
+        return "<nv_webserver(server_id=%d), name = %s, dst_path = %s>" % \
+                (self.sys_id, self.name, self.video_path)
 
 class nv_camera(db_base):
     '''
@@ -89,6 +103,7 @@ class db_manager():
         self.db_session_cls = session_maker()
         db_base.metadata.create_all(self.db_engine)
         self.nv_midbox_db_entry = None
+        self.nv_webserver = None
         self.nv_log_handler.debug("Tables created in nvdb")
 
     def setup_session(self):
@@ -96,13 +111,28 @@ class db_manager():
             self.nv_log_handler.debug("NULL db session, create a new one..")
             self.db_session = self.db_session_cls
 
+    def init_webserver_params(self, webserver_db_entry):
+        if self.db_session is None:
+            self.nv_log_handler.error("Can't create webserver record, "
+                                      "DB session is not initialized")
+            return
+        if self.nv_webserver is not None:
+            self.nv_log_handler.error("Cannot create multiple webserver for"
+                                    "same machine")
+            return
+        self.nv_webserver = webserver_db_entry
+        self.nv_log_handler.info("Setting the webserver DB record %d"
+                                 % webserver_db_entry.server_id)
+        db_mgr_obj.add_record(self.nv_midbox_db_entry)
+        db_mgr_obj.db_commit()
+
     def create_system_record(self):
         if self.db_session is None:
             self.nv_log_handler.error("Can't create system record, "
                                       "DB session is not initialized")
             return
         if self.nv_midbox_db_entry is not None:
-            self.nv_log_handler.error("Cannot create multiple system entry for"
+            self.nv_log_handler.error("Cannot create multiple system entries for"
                                       "same machine")
             return
         sys_id = (uuid.uuid4().int>>64) & 0xFFFFFFFF
@@ -114,6 +144,9 @@ class db_manager():
 
     def get_own_system_record(self):
         return self.nv_midbox_db_entry
+
+    def get_webserver_record(self):
+        return self.nv_webserver
 
     def add_record(self, record_obj):
         self.nv_log_handler.debug("Adding a new record")

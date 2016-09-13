@@ -14,6 +14,7 @@ from src.nvcamera.thread_manager import thread_manager
 from src.nv_logger import nv_logger
 from src.nvdb.nvdb_manager import db_mgr_obj, nv_midbox_system
 from src.nvdb.nvdb_manager import nv_camera
+from src.nvdb.nvdb_manager import nv_webserver_system
 try:
     from termcolor import colored
 except ImportError:
@@ -26,6 +27,7 @@ NV_MIDBOX_CLI_FNS = {
                 "STOP-CAMERA-STREAM" : "nv_midbox_stop_stream",
                 "LIST-ALL-CAMERAS" : "nv_midbox_list_cameras",
                 "LIST-SYSTEM" : "list_midbox_system",
+                "ADD-WEBSERVER" : "add_nv_webserver",
                 "QUIT-MIDBOX" : "nv_midbox_stop"
                     }
 
@@ -81,6 +83,19 @@ class nv_middlebox_cli(threading.Thread):
             except KeyboardInterrupt:
                 self.cam_thread_mgr.stop_all_camera_threads()
                 break
+
+    def add_nv_webserver(self):
+        srv_name = input("Enter webserver Name: ")
+        if not srv_name:
+            srv_name = 'localhost'
+        srv_path = input("Enter webserver video path: ")
+        if not srv_path:
+            srv_path = '/tmp/'
+        wbsrv_entry = nv_webserver_system(name = srv_name,
+                                    server_id = (uuid.uuid4().int>>64)
+                                                & 0xFFFFFFFF,
+                                    video_path = srv_path)
+        db_mgr_obj.init_webserver_params(wbsrv_entry)
 
     def nv_midbox_add_camera(self):
         nv_midbox_db_entry = db_mgr_obj.get_own_system_record()
