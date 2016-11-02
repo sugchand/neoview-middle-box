@@ -15,6 +15,7 @@ from time import sleep
 import ipaddress
 from src.settings import NV_MID_BOX_CAM_STREAM_DIR
 from threading import Thread
+from threading import Event
 
 class cam_handler():
     #Stream count used to specify the current file to stream out.
@@ -44,8 +45,9 @@ class cam_handler():
         self.os_context = nv_os_lib()
         self.nv_log_handler.debug("Initialized the camera handler.")
         self.cam_thread_obj = None
+        self.cam_stream_stop_event = Event()
 
-    def save_camera_stream_in_multifile(self):
+    def save_camera_stream_in_multifile(self, stop_event):
         cam_src_path = ["rtsp://" + self.username + ":" + self.pwd + "@" +\
                         self.cam_ip + ":" + self.cam_listen_port]
         vlc_out_opts = cam_src_path +\
@@ -60,7 +62,7 @@ class cam_handler():
         out_file_path = NV_MID_BOX_CAM_STREAM_DIR.rstrip('/') + "/" +\
                         self.cam_dir + "/"
         self.os_context.make_dir(out_file_path)
-        while True:
+        while not stop_event.is_set():
             # Camera streaming loop to stream from camera, cut and store in
             # multiple files. No error validation here, the files might be
             # created without any video data. The restreaming server validates
@@ -70,6 +72,8 @@ class cam_handler():
             vlc_args = vlc_out_opts + [":sout=#file{dst=" + out_file + "}"]
             self.nv_log_handler.debug("Streaming  to a file %s" %str(vlc_args))
             self.os_context.execute_cmd("cvlc", vlc_args)
+        self.nv_log_handler.debug("Exiting the camera thread for %s" \
+                                  % self.cam_id)
 
     def add_camera(self, cam_entry):
         '''
@@ -93,7 +97,8 @@ class cam_handler():
                                         "its already exists")
             return
         self.cam_thread_obj = Thread(name=self.cam_id,
-                              target=self.save_camera_stream_in_multifile())
+                              target=self.save_camera_stream_in_multifile,
+                              args = (self.cam_stream_stop_event,))
         self.cam_thread_obj.daemon = True
         self.cam_thread_obj.start()
 
@@ -101,7 +106,8 @@ class cam_handler():
         '''
         Stop the camera streaming of camera with id 'cam_id'
         '''
-        self.cam_thread_obj.stop()
+        self.cam_stream_stop_event.set()
+        self.cam_thread_obj.join()
 
     def join_camera_thread(self):
         '''

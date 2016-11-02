@@ -54,7 +54,8 @@ class thread_manager():
 
     def stop_all_camera_threads(self):
         # Destroy all the threads that created by the thread manager.
-        for cam_id, cam_obj in cam_thread_dic.items():
+        local_thread_dic = cam_thread_dic
+        for cam_id, cam_obj in local_thread_dic.items():
             self.stop_camera_thread(cam_id, cam_obj)
 
     def start_all_camera_threads(self):

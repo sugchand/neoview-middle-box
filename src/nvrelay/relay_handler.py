@@ -19,6 +19,7 @@ from src.settings import NV_MID_BOX_CAM_STREAM_DIR
 from src.nvdb.nvdb_manager import db_mgr_obj
 from src.nv_logger import nv_logger
 from src.nv_lib.nv_os_lib import nv_os_lib
+
 class relay_ftp_handler():
     '''
     the relay handler class to do the file copying from middlebox to webserver.
@@ -150,7 +151,11 @@ class relay_watcher(FileSystemEventHandler):
 
 class relay_main():
     '''
-    The relay main thread class for the file event handling
+    The relay main thread class for the file event handling.
+    NOTE :: THIS THREAD SHOULDNT HOLD ANY LOCK OR ENTER INTO CRITICAL SECTION
+    BY BLOCKING OTHER THREADS. ITS POSSIBLE THIS THREAD GET KILLED BY MAIN
+    THREAD ANYTIME. HOLDING A CRITICAL SECTION RESOURCE IN THIS MODULE LEADS
+    A DEAD LOCK.
     '''
     def __init__(self):
         self.watcher_obj = relay_watcher()
