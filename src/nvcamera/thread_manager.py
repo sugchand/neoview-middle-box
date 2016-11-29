@@ -30,7 +30,8 @@ class thread_manager():
         # Create a thread for camera stream handling if not exists
         # Store the thread details in the global list.
         cam_id = cam_table_entry.cam_id
-        if cam_id in cam_thread_dic.keys():
+        if cam_id in cam_thread_dic.keys() and\
+            cam_thread_dic[cam_id] is not None:
             self.nv_log_handler.error("A thread is already exists for the"
                                       "camera with id %d" % cam_id)
             return
@@ -44,18 +45,22 @@ class thread_manager():
         if cam_obj is None:
             cam_obj = cam_thread_dic.get(cam_id)
         if not cam_obj:
-            self.nv_log_handler.error("The camera handler thread not exists for"
-                                      "%d", cam_id)
+            self.nv_log_handler.debug("The camera handler thread not exists for"
+                                      " %d", cam_id)
             return
-        cam_obj.stop_camera_thread()
-        del cam_thread_dic[cam_id]
-        self.nv_log_handler.debug("The camera handler thread stopped for"
-                                  "camera id %d", cam_id)
+        try:
+            cam_obj.stop_camera_thread()
+            cam_thread_dic[cam_id] = None
+            self.nv_log_handler.debug("The camera handler thread stopped for"
+                                  " camera id %d", cam_id)
+        except Exception as e:
+            self.nv_log_handler.debug("Failed to stop camera %d"
+                                      "with exception %s", cam_id, str(e))
+            raise e
 
     def stop_all_camera_threads(self):
         # Destroy all the threads that created by the thread manager.
-        local_thread_dic = cam_thread_dic
-        for cam_id, cam_obj in local_thread_dic.items():
+        for cam_id, cam_obj in cam_thread_dic.items():
             self.stop_camera_thread(cam_id, cam_obj)
 
     def start_all_camera_threads(self):

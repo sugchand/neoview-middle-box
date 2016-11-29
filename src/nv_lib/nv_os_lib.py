@@ -12,13 +12,39 @@ from src.nv_logger import nv_logger
 import subprocess
 import os
 import shutil
+import paramiko
 
 class nv_linux_lib():
     '''
     Library class for the linux operating system.
     '''
     def __init__(self):
-        self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()  
+        self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
+
+    def get_remote_host_connection(self, hostname, username, pwd):
+        '''
+        Returns a ssh object to connect 'hostname'.
+        If the connection failed, error returned with NULL object.
+        NOTE :: Called must close the SSH connection explicitly.
+        Its not safe to keep rogue ssh connections around.
+        '''
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            ssh.connect(hostname, username = username,
+                                password = pwd)
+            return ssh
+        except Exception as e:
+            self.nv_log_handler.error("Failed to reach remote machine %s"
+                                      % hostname);
+            raise e
+
+    def close_remote_host_connection(self, ssh):
+        if not ssh:
+            self.nv_log_handler.warning("log-in credentails are empty,"
+                                        "Nothing to close")
+            return
+        ssh.close()
 
     def make_dir(self,dir_name):
         if not os.path.exists(dir_name):
@@ -68,7 +94,30 @@ class nv_linux_lib():
         return os.path.dirname(path)
 
     def copy_file(self, src_file, dst_dir):
+        '''
+        Copy the file locally on a same machine. No validation for src/dst files
+        are exists on the machine. The file will be overwritten when the file
+        present at destination. Similarly if the file not present at source ,
+        error out.
+        '''
         shutil.copy(src_file, dst_dir)
+
+    def remote_copy_file(self, src_file, ssh, remote_dir):
+        '''
+        Copy a file 'src_file' to a remote system at 'remote_dir'.
+        ssh is a ssh log in object for the specific remote machine.
+        XXX :: Copy may fail when the destination directory permissions are not
+        sufficient.
+        '''
+        try:
+            sftp = ssh.open_sftp()
+            sftp.put(src_file, remote_dir + self.get_last_filename(src_file))
+            self.nv_log_handler.debug("%s file copied to %s"
+                                      % (src_file, remote_dir))
+            ssh.close()
+        except Exception as e:
+            self.nv_log_handler.error("Failed to copy to remote machine.")
+            raise e
 
     def get_parent_dir(self, file_path):
         return os.path.dirname(file_path)
@@ -161,6 +210,18 @@ class nv_os_lib():
             raise ReferenceError("Undefined context, cannot find the program.")
         return self.context.is_pgm_installed(pgm_name)
 
+    def get_remote_host_connection(self, hostname, username, pwd):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+            raise ReferenceError("Undefined context, cannot find the program.")
+        return self.context.get_remote_host_connection(hostname, username, pwd)
+
+    def close_remote_host_connection(self, ssh):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+            raise ReferenceError("Undefined context, cannot find the program.")
+        return self.context.close_remote_host_connection(ssh)
+
     def make_dir(self,dir_name):
         '''
         Create a new directory in the system if its not exists.
@@ -198,6 +259,12 @@ class nv_os_lib():
         if self.context is None:
             self.nv_log_handler.error("Platform not defined.")
         return self.context.copy_file(src_path, dst_dir)
+
+    def remote_copy_file(self, src_file, hostname, username, pwd, remote_dir):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.remote_copy_file(src_file, hostname, username, pwd,
+                                             remote_dir)
 
     def get_last_filename(self, file_path):
         if self.context is None:

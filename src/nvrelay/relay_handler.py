@@ -19,6 +19,41 @@ from src.settings import NV_MID_BOX_CAM_STREAM_DIR
 from src.nvdb.nvdb_manager import db_mgr_obj
 from src.nv_logger import nv_logger
 from src.nv_lib.nv_os_lib import nv_os_lib
+from src.nv_lib.nv_sync_lib import GBL_NV_SYNC_OBJ
+import queue
+
+class relay_queue_mgr():
+    '''
+    Class to manage files to copy. It maintain one queue per camera stream.
+    '''
+    def __init__(self):
+        '''
+        Dictionary to hold the different queues. the dictionary will be looks
+        like
+        cam_stream_queue_dic = {
+                            'camera1' : queue1,
+                            'camera2' : queue2
+                             }
+        '''
+        self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
+        self.cam_stream_queue_dic = {}
+
+    def enqueue_file_pair(self, cam_name, src, dst):
+        if not cam_name in self.cam_stream_queue_dic:
+            # There is no queue for specific camera, create it.
+            rel_queue = queue.Queue()
+            self.cam_stream_queue_dic[cam_name] = rel_queue
+        else:
+            rel_queue = self.cam_stream_queue_dic[cam_name]
+        rel_queue.put([src, dst])
+
+    def dequeue_file_pair(self, cam_name):
+        if not cam_name in self.cam_stream_queue_dic:
+            self.nv_log_handler.debug("Cannot dequeue from a non-existent queue"
+                                      ": %s" % cam_name)
+            return [None, None]
+        rel_queue = self.cam_stream_queue_dic[cam_name]
+        return rel_queue.get()
 
 class relay_ftp_handler():
     '''
@@ -27,14 +62,7 @@ class relay_ftp_handler():
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.os_context = nv_os_lib()
-        self.copy_selector = False
-        '''
-        A list to buffer the file copy information. each entry in the list holds
-        src and dst information for the file copy.
-        The file to be copied selected using copy_selector.
-        the list should be like [[src1, dst1], [src2, dst2]]
-        '''
-        self.copy_file_list = [[None, None], [None, None]]
+        self.queue_mgr = relay_queue_mgr()
 
     def is_file_to_copy_valid(self, file_path):
         '''
@@ -48,26 +76,25 @@ class relay_ftp_handler():
             return False
         return True
 
-    def enqeue_copy_file_list(self, src, dst):
+    def enqeue_copy_file_list(self, cam_name, src, dst):
         '''
-        NOTE ::: the list is not thread safe. Its responsibility of caller to
-        access to the list and selector in thread safe manner.Also this function
-        must be executed in atomic manner.
+        NOTE ::: 
         The assumption here is copying of file must be faster than getting a file
         generated.
+        Relay agent trigger a copy operation for every file created by middle
+        box streaming thread. Copying a file immediately on creation causes data
+        loss/corruption as the file generation is not complete.
+        The enqueue mechanism take care of it by copying a file only after the
+        creation is complete. On creation files are enqueued and real copying is
+        happen only at the time of second file creation.
         '''
-        self.copy_file_list[self.copy_selector] = [src, dst]
-        # Toggle the index
-        self.copy_selector = self.copy_selector ^ True
-        # Copy if a valid file exists
-        copy_path = self.copy_file_list[self.copy_selector]
-        if not copy_path[0]:
+        [cp_src, cp_dst] = self.queue_mgr.dequeue_file_pair(cam_name)
+        self.queue_mgr.enqueue_file_pair(cam_name, src, dst)
+        if cp_src is None or cp_dst is None:
             return
         self.nv_log_handler.debug("Copying file %s to %s"% \
-                                  (copy_path[0], copy_path[1]))
-        self.os_context.copy_file(copy_path[0], copy_path[1])
-        # Reset the data after copying.
-        self.copy_file_list[self.copy_selector] = [None, None]
+                                  (cp_src, cp_dst))
+        self.os_context.copy_file(cp_src, cp_dst)
 
     def local_file_transfer(self, nv_cam_src, webserver):
         # Copy the file nv_cam_src to dst.
@@ -84,11 +111,11 @@ class relay_ftp_handler():
         if not self.os_context.is_path_exists(dst_dir):
             self.nv_log_handler.debug("Create the directory %s" % dst_dir)
             self.os_context.make_dir(dst_dir)
-        self.enqeue_copy_file_list(nv_cam_src, dst_dir)
+        self.enqeue_copy_file_list(cam_src_dir, nv_cam_src, dst_dir)
         self.nv_log_handler.debug("Enqueued file %s to %s" %(nv_cam_src, dst_dir))
 
     def remote_file_transfer(self, nv_cam_src, webserver):
-        # Copy the file remotely.
+        # Copy the file remotely using scp/sftp.
         pass
 
     def is_webserver_local(self, webserver):
@@ -108,6 +135,9 @@ class relay_ftp_handler():
         file_ext = '.mp4'
         return file_path.endswith(file_ext)
 
+    def kill_ftp_session(self):
+        pass
+
 class relay_watcher(FileSystemEventHandler):
     '''
     The watcher notified when a file change event happened. 
@@ -116,6 +146,31 @@ class relay_watcher(FileSystemEventHandler):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.ftp_obj = relay_ftp_handler()
         self.is_local_wbs = self.ftp_obj.is_webserver_local(None)
+        self.is_relay_thread_killed = False # flag for tracking user kill.
+
+    def kill_relay_thread(self):
+        '''
+        Function to kill the relay thread gracefully. It waits until the thread
+        completes the current execution before initiate the kill.
+        '''
+        self.is_relay_thread_killed = True
+        GBL_NV_SYNC_OBJ.mutex_lock(self.__class__.__name__)
+            # Wait until current relay thread completes its processing.
+        try:
+            self.ftp_obj.kill_ftp_session()
+        except:
+            self.nv_log_handler.error("Failed to close the ftp session properly")
+        finally:
+            GBL_NV_SYNC_OBJ.mutex_unlock(self.__class__.__name__)
+
+    def is_relay_thread_active(self):
+        '''
+        XXX :: Any relay thread operation must check/call this function
+        before doing any kind of operation. This function returns whether
+        the control thread/user issues a kill signal. The check must avoids
+        unnecessary long wait for the kill signal execution.
+        '''
+        return self.is_relay_thread_killed
 
     def process(self, event):
         """
@@ -126,6 +181,7 @@ class relay_watcher(FileSystemEventHandler):
         event.src_path
             path/to/observed/file
         """
+        pass
         # the file will be processed there
     #    print(event.src_path, event.event_type)  # print now only for degug
 
@@ -133,6 +189,16 @@ class relay_watcher(FileSystemEventHandler):
     #    self.process(event)
 
     def on_created(self, event):
+        '''
+        On a file creation, change the thread state to busy to avoid premature
+        thread close. Close the thread only when there is no event to be
+        handled.
+        '''
+        if(self.is_relay_thread_active()):
+            #Kill signal issued, nothing to do.
+            self.nv_log_handler.debug("Kill signal issued, no file copy")
+            return
+        GBL_NV_SYNC_OBJ.mutex_lock(self.__class__.__name__)
         # Check if the webserver local, copy the file to a specified location
         websrv = db_mgr_obj.get_webserver_record()
         if not websrv:
@@ -142,6 +208,7 @@ class relay_watcher(FileSystemEventHandler):
             cam_src_path = event.src_path
             self.ftp_obj.local_file_transfer(cam_src_path, websrv)
     #    self.process(event)
+        GBL_NV_SYNC_OBJ.mutex_unlock(self.__class__.__name__)
 
     #def on_deleted(self,event):
     #    self.process(event)
@@ -167,7 +234,9 @@ class relay_main():
         self.observer_obj.start()
 
     def relay_stop(self):
+        self.watcher_obj.kill_relay_thread()
         self.observer_obj.stop()
+        self.observer_obj.join()
 
     def relay_join(self):
         self.observer_obj.join()

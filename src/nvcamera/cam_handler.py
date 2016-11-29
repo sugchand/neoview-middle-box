@@ -72,6 +72,10 @@ class cam_handler():
             vlc_args = vlc_out_opts + [":sout=#file{dst=" + out_file + "}"]
             self.nv_log_handler.debug("Streaming  to a file %s" %str(vlc_args))
             self.os_context.execute_cmd("cvlc", vlc_args)
+        # Delete the last file as it may be not safe to share.
+        self.nv_log_handler.debug("delete last video snip %s before exiting,",
+                                  out_file)
+        self.os_context.remove_file(out_file)
         self.nv_log_handler.debug("Exiting the camera thread for %s" \
                                   % self.cam_id)
 

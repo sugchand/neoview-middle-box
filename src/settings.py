@@ -15,11 +15,11 @@ NV_MID_BOX_RUN_DIR = "/usr/local/var/run/nv-middlebox"
 # Middlebox PID for the daemon.
 NV_MID_BOX_PID = "/usr/local/var/run/nv-middlebox/nv_middlebox.pid"
 #Middle box camera streaming file Directory
-NV_MID_BOX_CAM_STREAM_DIR = "/tmp"
+NV_MID_BOX_CAM_STREAM_DIR = "/tmp/camera"
 
 
 # nv-middle-box logging Settings
-NV_DEFAULT_LOG_LEVEL = logging.ERROR
+NV_DEFAULT_LOG_LEVEL = logging.DEBUG
 #NV_LOG_FILE = "/usr/local/var/log/nv-middlebox/nv_middlebox.log"
 NV_LOG_FILE = "/tmp/nv_middlebox.log"
 NV_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"

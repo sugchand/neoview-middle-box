@@ -15,6 +15,8 @@ from src.nv_logger import nv_logger
 from src.nvdb.nvdb_manager import db_mgr_obj, nv_midbox_system
 from src.nvdb.nvdb_manager import nv_camera
 from src.nvdb.nvdb_manager import nv_webserver_system
+from src.nvrelay.relay_handler import relay_main
+
 try:
     from termcolor import colored
 except ImportError:
@@ -24,7 +26,7 @@ NV_MIDBOX_CLI_FNS = {
                 "ADD-CAMERA" : "nv_midbox_add_camera",
                 "DELETE-CAMERA" : "nv_midbox_del_camera",
                 "START-CAMERA-STREAM" : "nv_midbox_start_stream",
-                "STOP-CAMERA-STREAM" : "nv_midbox_stop_stream",
+                "STOP-CAMERA-STREAM" : "nv_midbox_stop_stream_cli",
                 "LIST-ALL-CAMERAS" : "nv_midbox_list_cameras",
                 "LIST-SYSTEM" : "list_midbox_system",
                 "ADD-WEBSERVER" : "add_nv_webserver",
@@ -40,13 +42,20 @@ class nv_middlebox_cli(threading.Thread):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         threading.Thread.__init__(self, None, None, "nv_midbox_cli")
         self.cam_thread_mgr = thread_manager()
+        self.nv_relay_mgr =  None # Thread to copy files to dst webserver
 
     def run(self):
-        db_mgr_obj.setup_session()
-        self.nv_middlebox_cli_main()
+        try:
+            self.nv_relay_mgr = relay_main()
+            self.nv_relay_mgr.process_relay()
+            self.nv_middlebox_cli_main()
+        except:
+            self.nv_relay_mgr.stop()
+            self.cam_thread_mgr.stop_all_camera_threads()
 
     def stop(self):
         self.cam_thread_mgr.stop_all_camera_threads()
+        self.nv_relay_mgr.relay_stop()
         super(nv_middlebox_cli, self).stop()
 
     def do_execute_nv_midbox_cli(self):
@@ -65,7 +74,6 @@ class nv_middlebox_cli(threading.Thread):
 
         quit_key = list(NV_MIDBOX_CLI_FNS.keys()).index('QUIT-MIDBOX')
         if choice is quit_key:
-            self.cam_thread_mgr.stop_all_camera_threads()
             return -1
 
         fn = list(NV_MIDBOX_CLI_FNS.values())[choice]
@@ -114,7 +122,7 @@ class nv_middlebox_cli(threading.Thread):
         cam_name = 'camera-1'
         cam_ip = int(ipaddress.IPv4Address('192.168.192.32'))
         cam_mac = "00:00:00:00:00:01"
-        cam_listen_port = 9000
+        cam_listen_port = 554
         time_len = 60
         cam_uname = 'admin'
         cam_pwd = 'sugu&deepu'
@@ -157,10 +165,20 @@ class nv_middlebox_cli(threading.Thread):
         self.nv_log_handler.debug("staring the stream recording on camera %s"
                                   % cam_name)
 
-    def nv_midbox_stop_stream(self):
-        cam_name = None
+    def nv_midbox_stop_stream_cli(self):
+        cam_name = input("Enter camera Name: ")
+        if cam_name is None:
+            return
+        self.nv_midbox_stop_stream(cam_name)
+
+    def nv_midbox_stop_stream(self, cam_name):
+        filter_arg = {'name' : cam_name}
+        cam_record = db_mgr_obj.get_tbl_records_filterby(nv_camera, filter_arg)[0]
+        if cam_record is None:
+            self.nv_log_handler.error("No camera record found for %s", cam_name)
+            return
+        self.cam_thread_mgr.stop_camera_thread(cam_record.cam_id, None)
         self.nv_log_handler.debug("Stop streaming on camera %s" %cam_name)
-        pass
 
     def list_midbox_system(self):
         if not db_mgr_obj.get_tbl_record_cnt(nv_midbox_system):

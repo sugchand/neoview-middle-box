@@ -17,13 +17,11 @@ sys.path.append(os.path.abspath(os.path.join(curr_dir, os.pardir)))
 from src.nv_logger import nv_logger,default_nv_log_handler
 from src.nvdb.nvdb_manager import db_mgr_obj
 # Import all the configuration values
-from src.nvrelay.relay_handler import relay_main
 from src.nv_middlebox_cli import nv_middlebox_cli
 
 class nv_middlebox():
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
-        self.nv_relay_mgr =  None # Thread to copy files to dst webserver
         self.nv_cli_mgr = None # Cli thread to read user inputs.
 
     def init_db(self):
@@ -36,17 +34,13 @@ class nv_middlebox():
             sys.tracebacklimit=0
             self.nv_log_handler.info("starting the middlebox")
             self.init_db()
-            self.nv_relay_mgr = relay_main()
-            self.nv_relay_mgr.process_relay()
             self.nv_cli_mgr = nv_middlebox_cli()
             self.nv_cli_mgr.start()
         except KeyboardInterrupt:
             self.nv_cli_mgr.stop()
-            self.nv_relay_mgr.stop()
         else:
             # Wait only for the user interface thread.
             self.nv_cli_mgr.join()
-        self.nv_relay_mgr.relay_stop()
 
 if __name__ == "__main__":
     if platform.system() != 'Linux':

@@ -183,6 +183,7 @@ class db_manager():
         self.nv_log_handler.debug("Collect records using filter %s"
                                   % ' '.join(list(kwargs)))
         return self.db_session.query(table_name).filter_by(**kwargs).all()
+
     def get_tbl_records_filterby_cnt(self, table_name, kwargs):
         '''
         the kwargs must be dictionary, for eg: to get all the records matches
