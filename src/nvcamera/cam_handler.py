@@ -111,7 +111,6 @@ class cam_handler():
         Stop the camera streaming of camera with id 'cam_id'
         '''
         self.cam_stream_stop_event.set()
-        self.cam_thread_obj.join()
 
     def join_camera_thread(self):
         '''

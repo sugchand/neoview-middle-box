@@ -50,13 +50,21 @@ class nv_middlebox_cli(threading.Thread):
             self.nv_relay_mgr.process_relay()
             self.nv_middlebox_cli_main()
         except:
-            self.nv_relay_mgr.stop()
-            self.cam_thread_mgr.stop_all_camera_threads()
+            self.exit_all_threads()
 
     def stop(self):
-        self.cam_thread_mgr.stop_all_camera_threads()
-        self.nv_relay_mgr.relay_stop()
+        self.exit_all_threads()
         super(nv_middlebox_cli, self).stop()
+
+    def exit_all_threads(self):
+        '''
+        Function to stop all the threads that are started by the midbox cli.
+        relay manager and all camera threads are stopped.
+        '''
+        self.nv_relay_mgr.relay_stop()
+        self.nv_relay_mgr.relay_join()
+        self.cam_thread_mgr.stop_all_camera_threads()
+        self.cam_thread_mgr.join_all_camera_threads()
 
     def do_execute_nv_midbox_cli(self):
         for i, (key, value) in enumerate(NV_MIDBOX_CLI_FNS.items()):
@@ -82,21 +90,23 @@ class nv_middlebox_cli(threading.Thread):
         return 0
 
     def nv_middlebox_cli_main(self):
+        print_color_string("** NOTE :: THE MIDDLE BOX MACHINE SETTING MUST BE SET "
+                           "BEFORE RUNNING ANY COMMAND BELOW **", color = "red")
         while(1):
             try:
                 res = self.do_execute_nv_midbox_cli()
                 if res == -1:
-                    self.cam_thread_mgr.stop_all_camera_threads()
+                    self.nv_midbox_stop()
                     break
             except KeyboardInterrupt:
-                self.cam_thread_mgr.stop_all_camera_threads()
+                self.exit_all_threads()
                 break
 
     def add_nv_webserver(self):
         srv_name = input("Enter webserver Name: ")
         if not srv_name:
             srv_name = 'localhost'
-        srv_path = input("Enter webserver video path: ")
+        srv_path = input("Enter webserver video path(default = /tmp): ")
         if not srv_path:
             srv_path = '/tmp/'
         wbsrv_entry = nv_webserver_system(name = srv_name,
@@ -128,6 +138,14 @@ class nv_middlebox_cli(threading.Thread):
         cam_pwd = 'sugu&deepu'
         #########################
 
+        filter_arg = {'name' : cam_name}
+        cam_cnt = db_mgr_obj.get_tbl_records_filterby_cnt(nv_camera, filter_arg)
+        if cam_cnt != 0:
+            self.nv_log_handler.error("%d camera records are already present"
+                                      " Cannot add camera %s", cam_cnt, cam_name)
+            print_color_string("Cannot add existing camera %s" % cam_name, 
+                               color = "blue")
+            return
         cam_entry = nv_camera(cam_id = (uuid.uuid4().int>>64) & 0xFFFFFFFF,
                                name = cam_name,
                                ip_addr = int(ipaddress.IPv4Address(cam_ip)),
@@ -199,4 +217,6 @@ class nv_middlebox_cli(threading.Thread):
         self.nv_log_handler.debug("Listing all the cameras in the DB")
 
     def nv_midbox_stop(self):
-        self.nv_log_handler.debug("Quit the middlebox")
+        self.nv_log_handler.info("Quit the middlebox, "
+                                  "Waiting for all threads to coalesce...")
+        self.exit_all_threads()

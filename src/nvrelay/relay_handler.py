@@ -20,6 +20,7 @@ from src.nvdb.nvdb_manager import db_mgr_obj
 from src.nv_logger import nv_logger
 from src.nv_lib.nv_os_lib import nv_os_lib
 from src.nv_lib.nv_sync_lib import GBL_NV_SYNC_OBJ
+from src.settings import NV_CAM_VALID_FILE_SIZE
 import queue
 
 class relay_queue_mgr():
@@ -70,9 +71,8 @@ class relay_ftp_handler():
         For now we assume if the file size is greater than 10MB its good to go,
         though its not an right assumption.
         '''
-        ten_mb = 10000000 # 10MB in Bytes
         file_size = self.os_context.get_filesize_in_bytes(file_path)
-        if file_size < ten_mb:
+        if file_size < NV_CAM_VALID_FILE_SIZE:
             return False
         return True
 
@@ -91,6 +91,11 @@ class relay_ftp_handler():
         [cp_src, cp_dst] = self.queue_mgr.dequeue_file_pair(cam_name)
         self.queue_mgr.enqueue_file_pair(cam_name, src, dst)
         if cp_src is None or cp_dst is None:
+            return
+        if not self.is_file_to_copy_valid(cp_src):
+            self.nv_log_handler.debug("%s file size less than %d,"
+                                      "Not copying to webserver",
+                                      cp_src, NV_CAM_VALID_FILE_SIZE)
             return
         self.nv_log_handler.debug("Copying file %s to %s"% \
                                   (cp_src, cp_dst))
@@ -136,7 +141,10 @@ class relay_ftp_handler():
         return file_path.endswith(file_ext)
 
     def kill_ftp_session(self):
+        self.nv_log_handler.debug("Closing the ftp session..")
         pass
+
+RELAY_MUTEX_NAME = "relay_watcher_mutex"
 
 class relay_watcher(FileSystemEventHandler):
     '''
@@ -153,15 +161,16 @@ class relay_watcher(FileSystemEventHandler):
         Function to kill the relay thread gracefully. It waits until the thread
         completes the current execution before initiate the kill.
         '''
+        self.nv_log_handler.debug("Stopping the relay thread..")
         self.is_relay_thread_killed = True
-        GBL_NV_SYNC_OBJ.mutex_lock(self.__class__.__name__)
+        GBL_NV_SYNC_OBJ.mutex_lock(RELAY_MUTEX_NAME)
             # Wait until current relay thread completes its processing.
         try:
             self.ftp_obj.kill_ftp_session()
         except:
             self.nv_log_handler.error("Failed to close the ftp session properly")
         finally:
-            GBL_NV_SYNC_OBJ.mutex_unlock(self.__class__.__name__)
+            GBL_NV_SYNC_OBJ.mutex_unlock(RELAY_MUTEX_NAME)
 
     def is_relay_thread_active(self):
         '''
@@ -198,7 +207,7 @@ class relay_watcher(FileSystemEventHandler):
             #Kill signal issued, nothing to do.
             self.nv_log_handler.debug("Kill signal issued, no file copy")
             return
-        GBL_NV_SYNC_OBJ.mutex_lock(self.__class__.__name__)
+        GBL_NV_SYNC_OBJ.mutex_lock(RELAY_MUTEX_NAME)
         # Check if the webserver local, copy the file to a specified location
         websrv = db_mgr_obj.get_webserver_record()
         if not websrv:
@@ -207,8 +216,11 @@ class relay_watcher(FileSystemEventHandler):
         if self.is_local_wbs:
             cam_src_path = event.src_path
             self.ftp_obj.local_file_transfer(cam_src_path, websrv)
+        else:
+            # The server is remote and need to do the scp over network
+            self.ftp_obj.remote_file_transfer(event.src_path, websrv)
     #    self.process(event)
-        GBL_NV_SYNC_OBJ.mutex_unlock(self.__class__.__name__)
+        GBL_NV_SYNC_OBJ.mutex_unlock(RELAY_MUTEX_NAME)
 
     #def on_deleted(self,event):
     #    self.process(event)
@@ -236,7 +248,6 @@ class relay_main():
     def relay_stop(self):
         self.watcher_obj.kill_relay_thread()
         self.observer_obj.stop()
-        self.observer_obj.join()
 
     def relay_join(self):
         self.observer_obj.join()

@@ -15,6 +15,12 @@ Camera handler thread dictionary. the format for the dictionary should be
 '''
 cam_thread_dic = {}
 
+'''
+camera handler threads that are marked to stop. The list is used to wait for
+camera threads before exiting the application
+'''
+join_cam_thread_dic = {}
+
 class thread_manager():
     '''
     Handle threads of each camera. A thread is created for every camera handler
@@ -50,6 +56,8 @@ class thread_manager():
             return
         try:
             cam_obj.stop_camera_thread()
+            # Append the camera thread to the join list
+            join_cam_thread_dic[cam_id] = cam_thread_dic[cam_id]
             cam_thread_dic[cam_id] = None
             self.nv_log_handler.debug("The camera handler thread stopped for"
                                   " camera id %d", cam_id)
@@ -69,5 +77,24 @@ class thread_manager():
         # function get called while initilizing.
         pass
 
-    def join_camera_thread(self,cam_id):
-        pass 
+    def join_camera_thread(self, cam_id, cam_obj):
+        if cam_obj is None:
+            cam_obj = join_cam_thread_dic[cam_id]
+        if not cam_obj:
+            self.nv_log_handler.debug("The camera handler thread doesnt exists"
+                                      "%d" % cam_id)
+            return
+        try:
+            cam_obj.join_camera_thread()
+            join_cam_thread_dic[cam_id] = None
+        except:
+            self.nv_log_handler.error("Failed to join the camera thread %d"
+                                      % cam_id)
+
+    def join_all_camera_threads(self):
+        try:
+            for cam_id, cam_obj in join_cam_thread_dic.items():
+                self.join_camera_thread(cam_id, cam_obj)
+        except:
+            self.nv_log_handler.error("Failed to join the camera threads.")
+

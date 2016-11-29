@@ -38,7 +38,7 @@ class nv_middlebox():
             self.nv_cli_mgr.start()
         except KeyboardInterrupt:
             self.nv_cli_mgr.stop()
-        else:
+        finally:
             # Wait only for the user interface thread.
             self.nv_cli_mgr.join()
 
