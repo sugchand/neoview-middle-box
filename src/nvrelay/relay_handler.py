@@ -237,17 +237,29 @@ class relay_main():
     A DEAD LOCK.
     '''
     def __init__(self):
+        self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
+        self.os_context = nv_os_lib()
         self.watcher_obj = relay_watcher()
         self.observer_obj = Observer()
 
     def process_relay(self):
-        self.observer_obj.schedule(self.watcher_obj, NV_MID_BOX_CAM_STREAM_DIR,
-                                   recursive=True)
-        self.observer_obj.start()
+        try:
+            if not self.os_context.is_path_exists(NV_MID_BOX_CAM_STREAM_DIR):
+                self.nv_log_handler.error("%s Directory not found",
+                                          NV_MID_BOX_CAM_STREAM_DIR)
+                raise FileNotFoundError
+            self.observer_obj.schedule(self.watcher_obj, NV_MID_BOX_CAM_STREAM_DIR,
+                                       recursive=True)
+            self.observer_obj.start()
+        except FileNotFoundError:
+            raise
+        except Exception as e:
+            raise e
 
     def relay_stop(self):
         self.watcher_obj.kill_relay_thread()
         self.observer_obj.stop()
 
     def relay_join(self):
-        self.observer_obj.join()
+        if self.observer_obj.isAlive():
+            self.observer_obj.join()

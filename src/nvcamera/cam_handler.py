@@ -116,7 +116,7 @@ class cam_handler():
         '''
         Wait for camera streamer thread to join in the main thread.
         '''
-        if self.cam_thread_obj is not None:
+        if self.cam_thread_obj is not None and self.cam_thread_obj.isAlive():
             self.cam_thread_obj.join()
 
     def get_camid_by_name(self, cam_name):

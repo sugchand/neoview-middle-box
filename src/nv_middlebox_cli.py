@@ -36,7 +36,7 @@ NV_MIDBOX_CLI_FNS = {
 def print_color_string(s, color='white'):
     print("%s" %(colored(s, color, attrs = ['bold'])))
 
-class nv_middlebox_cli(threading.Thread):
+class nv_middlebox_conf(threading.Thread):
 
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
@@ -50,11 +50,13 @@ class nv_middlebox_cli(threading.Thread):
             self.nv_relay_mgr.process_relay()
             self.nv_middlebox_cli_main()
         except:
+            self.nv_log_handler.error("Unknown exception while starting"
+                                      " the middlebox")
             self.exit_all_threads()
 
     def stop(self):
         self.exit_all_threads()
-        super(nv_middlebox_cli, self).stop()
+        super(nv_middlebox_conf, self).stop()
 
     def exit_all_threads(self):
         '''
