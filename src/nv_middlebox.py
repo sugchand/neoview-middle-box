@@ -17,7 +17,7 @@ sys.path.append(os.path.abspath(os.path.join(curr_dir, os.pardir)))
 from src.nv_logger import nv_logger,default_nv_log_handler
 from src.nvdb.nvdb_manager import db_mgr_obj
 # Import all the configuration values
-from src.nv_middlebox_cli import nv_middlebox_conf
+from src.nv_midbox_conf import nv_midbox_conf
 
 class nv_middlebox():
     def __init__(self):
@@ -34,7 +34,7 @@ class nv_middlebox():
             sys.tracebacklimit=0
             self.nv_log_handler.info("starting the middlebox")
             self.init_db()
-            self.nv_conf = nv_middlebox_conf()
+            self.nv_conf = nv_midbox_conf()
             self.nv_conf.do_midbox_conf()
         except KeyboardInterrupt:
             if self.nv_conf:
