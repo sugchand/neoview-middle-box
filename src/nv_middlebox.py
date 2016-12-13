@@ -34,13 +34,11 @@ class nv_middlebox():
             sys.tracebacklimit=0
             self.nv_log_handler.info("starting the middlebox")
             self.init_db()
-            self.nv_cli_mgr = nv_middlebox_conf()
-            self.nv_cli_mgr.start()
+            self.nv_conf = nv_middlebox_conf()
+            self.nv_conf.do_midbox_conf()
         except KeyboardInterrupt:
-            self.nv_cli_mgr.stop()
-        finally:
-            # Wait only for the user interface thread.
-            self.nv_cli_mgr.join()
+            if self.nv_conf:
+                self.nv_conf.exit_all_threads()
 
 if __name__ == "__main__":
     if platform.system() != 'Linux':

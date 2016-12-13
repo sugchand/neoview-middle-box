@@ -16,6 +16,9 @@ import ipaddress
 from src.settings import NV_MID_BOX_CAM_STREAM_DIR
 from threading import Thread
 from threading import Event
+from src.nv_lib.ipc_data_obj import camera_data, enum_ipcOpCode
+from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
+from src.nvdb.nvdb_manager import enum_camStatus
 
 class cam_handler():
     #Stream count used to specify the current file to stream out.
@@ -38,6 +41,7 @@ class cam_handler():
         self.curr_stream_cnt = 0
         self.cam_dir = str(cam_tbl_entry.cam_id)
         self.cam_id = self.cam_dir
+        self.name = cam_tbl_entry.name
         self.username = cam_tbl_entry.username
         self.pwd = cam_tbl_entry.password
         self.cam_ip = str(ipaddress.IPv4Address(cam_tbl_entry.ip_addr))
@@ -76,6 +80,24 @@ class cam_handler():
         self.nv_log_handler.debug("delete last video snip %s before exiting,",
                                   out_file)
         self.os_context.remove_file(out_file)
+        # Set the camera status to ready while exiting the streaming.
+        cam_ipcData = camera_data(op = enum_ipcOpCode.CONST_UPDATE_CAMERA_STATUS,
+                                  name = self.name,
+                                  status = enum_camStatus.CONST_CAMERA_READY,
+                                  # Everything else is None.
+                                  ip = None,
+                                  macAddr = None,
+                                  port = None,
+                                  time_len = None,
+                                  uname = None,
+                                  pwd =  None,
+                                  desc = None
+                                  )
+        try:
+            GBL_CONF_QUEUE.enqueue_data(obj_len = 1, obj_value = [cam_ipcData])
+        except Exception as e:
+            self.nv_log_handler.error("Failed to change the camera status while"
+                                      "stopping the streaming, %s", e)
         self.nv_log_handler.debug("Exiting the camera thread for %s" \
                                   % self.cam_id)
 

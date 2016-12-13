@@ -54,6 +54,9 @@ class relay_queue_mgr():
                                       ": %s" % cam_name)
             return [None, None]
         rel_queue = self.cam_stream_queue_dic[cam_name]
+        if rel_queue.empty():
+            self.nv_log_handler.debug("Cannot dequeue from a empty queue")
+            return None
         return rel_queue.get()
 
 class relay_ftp_handler():

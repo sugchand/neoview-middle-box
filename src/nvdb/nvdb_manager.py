@@ -3,7 +3,6 @@
 # The database manager module for nv-middlebox.
 #
 # Use this file to interact with DB.
-from email.policy import default
 
 __author__ = "Sugesh Chandran"
 __copyright__ = "Copyright (C) The neoview team."
@@ -12,7 +11,7 @@ __version__ = "1.0"
 
 import uuid
 from sqlalchemy import create_engine
-from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, func
+from sqlalchemy import Column, DateTime, String, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from src.settings import NVDB_SQLALCHEMY_DB
@@ -47,6 +46,13 @@ class nv_webserver_system(db_base):
         return "<nv_webserver(server_id=%d), name = %s, dst_path = %s>" % \
                 (self.sys_id, self.name, self.video_path)
 
+class enum_camStatus():
+    CONST_CAMERA_NEW = 0 # OFF state/Invalid state.
+    CONST_CAMERA_READY = 1 # ON state, not recording.
+    CONST_CAMERA_RECORDING = 2 # ON and recording.
+    # Camera/thread is busy, cannot do any operation now.
+    CONST_CAMERA_DEFERRED = 3
+
 class nv_camera(db_base):
     '''
     The table model to hold the camera parameters
@@ -54,6 +60,8 @@ class nv_camera(db_base):
     __tablename__ = 'nv_camera'
     cam_id = Column(Integer, primary_key = True)
     name = Column(String, nullable = False, unique = True)
+    status = Column(Integer) # Should be the enum type enum_camStatus
+    desc = Column(String) # Camera description.
     ip_addr = Column(Integer, nullable = False, unique = True)
     mac_addr = Column(String, nullable = False, unique = True)
     listen_port = Column(Integer, nullable = False)
@@ -76,11 +84,13 @@ class nv_camera(db_base):
         return "<nv_camera(cam_id=%d name='%s', ip_addr='%d', mac_addr='%s') \
                 listen_port=%d, username=%s, password=%s, src_protocol=%d, \
                 stream_file_cnt=%d, stream_file_time_sec=%d, \
-                active_conn=%d, nv_midbox_id=%d)>" % (self.cam_id, self.name, \
+                active_conn=%d, nv_midbox_id=%d), status = %d, \
+                desc = %s >" % (self.cam_id, self.name, \
                 self.ip_addr, self.mac_addr, self.listen_port, \
                 self.username, self.password, self.src_protocol, \
                 self.stream_file_cnt, self.stream_file_time_sec, \
-                self.active_conn, self.nv_midbox_id)
+                self.active_conn, self.nv_midbox_id, \
+                self.status, self.desc)
 
 
 class db_manager():
@@ -123,8 +133,19 @@ class db_manager():
         self.nv_webserver = webserver_db_entry
         self.nv_log_handler.info("Setting the webserver DB record %d"
                                  % webserver_db_entry.server_id)
-        db_mgr_obj.add_record(self.nv_midbox_db_entry)
-        db_mgr_obj.db_commit()
+        self.add_record(self.nv_midbox_db_entry)
+        self.db_commit()
+
+    def del_webserver(self):
+        if self.db_session is None:
+            self.nv_log_handler.error("Can't create webserver record, "
+                                      "DB session is not initialized")
+            return
+        if self.nv_webserver is None:
+            self.nv_log_handler.error("Cannot delete non-existant webserver"
+                                    " instance")
+            return
+        self.clean_table(table_name=nv_webserver_system.__tablename__)
 
     def create_system_record(self):
         if self.db_session is None:
@@ -139,8 +160,8 @@ class db_manager():
         self.nv_midbox_db_entry = nv_midbox_system(sys_id = sys_id,
                                       name = NV_MID_BOX_APP_NAME)
         self.nv_log_handler.info("Setting the middlebox DB record %d" % sys_id)
-        db_mgr_obj.add_record(self.nv_midbox_db_entry)
-        db_mgr_obj.db_commit()
+        self.add_record(self.nv_midbox_db_entry)
+        self.db_commit()
 
     def get_own_system_record(self):
         return self.nv_midbox_db_entry
@@ -183,6 +204,16 @@ class db_manager():
         self.nv_log_handler.debug("Collect records using filter %s"
                                   % ' '.join(list(kwargs)))
         return self.db_session.query(table_name).filter_by(**kwargs).all()
+
+    def get_tbl_records_filterby_first(self, table_name, kwargs):
+        '''
+        the kwargs must be dictionary, for eg: to get all the records matches
+        a name the kwargs will be
+        kwargs = {'name' : 'sugu'}
+        '''
+        self.nv_log_handler.debug("Collect records using filter %s"
+                                  % ' '.join(list(kwargs)))
+        return self.db_session.query(table_name).filter_by(**kwargs).first()
 
     def get_tbl_records_filterby_cnt(self, table_name, kwargs):
         '''

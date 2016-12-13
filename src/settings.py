@@ -28,7 +28,10 @@ NV_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
 
 
 #nv-middlebox db settings
-NVDB_SQLALCHEMY_DB = 'sqlite:///:memory:'
+NVDB_SQLALCHEMY_DB = 'sqlite:///:memory:' #Inmemory DB
+
+#NVDB_SQLALCHEMY_DB = 'sqlite:///nvdb.db' #Relative path db
+#NVDB_SQLALCHEMY_DB = 'sqlite:////tmp/nvdb.db' #absolute path db
 
 #nv-middlebox database logging settings.
 NVDB_DEFAULT_LOG_LEVEL = logging.DEBUG
