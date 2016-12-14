@@ -145,7 +145,7 @@ class db_manager():
             self.nv_log_handler.error("Cannot delete non-existant webserver"
                                     " instance")
             return
-        self.clean_table(table_name=nv_webserver_system.__tablename__)
+        self.clean_table(table_name=nv_webserver_system)
 
     def create_system_record(self):
         if self.db_session is None:
@@ -182,20 +182,37 @@ class db_manager():
         self.db_session.delete(record_obj)
 
     def clean_table(self, table_name):
+        '''
+        Params:
+            table_name : the table class name, just pass the class name as is.
+        '''
         for row in self.db_session.query(table_name).all():
             self.db_session.delete(row)
         self.nv_log_handler.debug("Cleaning the table %s", table_name.__name__)
 
     def get_tbl_record_cnt(self, table_name):
+        '''
+        Params:
+            table_name : the table class name, just pass the class name as is.
+        '''
         self.nv_log_handler.debug("Get number of records in %s",
                                table_name.__name__)
         return self.db_session.query(table_name).count()
 
     def get_tbl_records(self, table_name):
+        '''
+        Params:
+            table_name : the table class name, just pass the class name as is.
+        '''
         self.nv_log_handler.debug("Collect all records in %s", table_name.__name__)
         return self.db_session.query(table_name).all()
 
     def get_tbl_records_filterby(self, table_name, kwargs):
+        '''
+        Params:
+            table_name : the table class name, just pass the class name as is.
+            kwargs : the filter argument to be used in filter.
+        '''
         '''
         the kwargs must be dictionary, for eg: to get all the records matches
         a name the kwargs will be
@@ -210,6 +227,7 @@ class db_manager():
         the kwargs must be dictionary, for eg: to get all the records matches
         a name the kwargs will be
         kwargs = {'name' : 'sugu'}
+        table_name : the table class name, just pass the class name as is.
         '''
         self.nv_log_handler.debug("Collect records using filter %s"
                                   % ' '.join(list(kwargs)))
@@ -220,6 +238,7 @@ class db_manager():
         the kwargs must be dictionary, for eg: to get all the records matches
         a name the kwargs will be
         kwargs = {'name' : 'sugu'}
+        table_name : the table class name, just pass the class name as is.
         '''
         self.nv_log_handler.debug("Collect records using filter %s"
                                   % ' '.join(list(kwargs)))
