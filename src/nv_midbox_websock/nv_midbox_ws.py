@@ -9,10 +9,13 @@ __version__ = "1.0"
 
 import threading
 import tornado.web
+from tornado.web import asynchronous
+from tornado import gen
+from tornado.ioloop import IOLoop
 import tornado.websocket
 import tornado.httpserver
 import tornado.ioloop
-from time import sleep
+from time import sleep, time
 from src.nv_logger import nv_logger
 from src.nvdb.nvdb_manager import db_mgr_obj, nv_camera
 from src.nv_logger import default_nv_log_handler
@@ -39,6 +42,8 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
     Web socket handler to manage the user interface. Providing hard switch
     functionality with this web socket
     '''
+    @asynchronous
+    @gen.engine
     def open(self):
         # Read the DB for all the camera and system details
         # Format it into json
@@ -57,6 +62,15 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
             default_nv_log_handler.error("Exception while opening user websocket"
                                          " %s", e)
             return
+        finally:
+            '''
+            Do the looping for update here,
+            '''
+            #while(1):
+                #yield gen.Task(IOLoop.instance().add_timeout, time.time() + 5)
+            #    yield gen.sleep(10)
+            #   self.write_message("In loop")
+            self.finish()
 
     def get_camera_json(self, camera):
         '''
@@ -74,7 +88,7 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
         self.write_message(u"Your message was: " + message)
 
     def on_close(self):
-        pass
+        self.finish()
 
 class IndexPageHandler(tornado.web.RequestHandler):
     def get(self):

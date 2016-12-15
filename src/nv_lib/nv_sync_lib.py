@@ -147,3 +147,7 @@ GBL_NV_SYNC_OBJ = nv_sync_lib()
 # The cmd execution queue used to run the commands to middlebox.
 # Main thread polls this queue all the time to execute operation in middlebox.
 GBL_CONF_QUEUE = nv_sync_queue(q_name="cmd_queue")
+
+# The queue for updating webserver thread on system status changes.
+# Webserver uses the GBL_CONF_QUEUE if it needs to configure something,
+GBL_WS_QUEUE = nv_sync_queue(q_name = 'ws_queue')
