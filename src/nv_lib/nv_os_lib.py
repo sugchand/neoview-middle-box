@@ -8,6 +8,7 @@ __license__ = "GNU Lesser General Public License"
 __version__ = "1.0"
 
 import platform
+import errno
 from src.nv_logger import nv_logger
 import subprocess
 import os
@@ -20,6 +21,8 @@ class nv_linux_lib():
     '''
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
+        self.ssh = None
+        self.sftp = None
 
     def get_remote_host_connection(self, hostname, username, pwd):
         '''
@@ -28,27 +31,48 @@ class nv_linux_lib():
         NOTE :: Called must close the SSH connection explicitly.
         Its not safe to keep rogue ssh connections around.
         '''
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            ssh.connect(hostname, username = username,
+            self.ssh.connect(hostname, username = username,
                                 password = pwd)
-            return ssh
+            return self.ssh
         except Exception as e:
             self.nv_log_handler.error("Failed to reach remote machine %s"
                                       % hostname);
             raise e
 
-    def close_remote_host_connection(self, ssh):
-        if not ssh:
-            self.nv_log_handler.warning("log-in credentails are empty,"
-                                        "Nothing to close")
-            return
-        ssh.close()
+    def get_remote_sftp_connection(self, hostname, username, pwd):
+        try:
+            self.ssh = self.get_remote_host_connection(hostname, username, pwd)
+            self.sftp = self.ssh.open_sftp()
+            return self.sftp
+        except Exception as e:
+            self.nv_log_handler.error("Failed to get the sftp connection to %s"\
+                                      % hostname)
+            raise e
+
+    def close_remote_sftp_connection(self):
+        if self.sftp:
+            self.sftp.close()
+
+    def close_remote_host_connection(self):
+        if self.ssh:
+            self.ssh.close()
 
     def make_dir(self,dir_name):
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
+
+    def remote_make_dir(self, sftp, dir_name):
+        '''
+        Recursive directory creation on a remote machine.
+        '''
+        parent_dir = os.path.abspath(os.path.join(dir_name, os.pardir))
+        if not self.is_remote_path_exists(sftp, parent_dir):
+            self.remote_make_dir(sftp, parent_dir)
+        self.nv_log_handler.debug("creating remote directory %s" % dir_name)
+        sftp.mkdir(dir_name)
 
     def remove_file(self, file_name):
         try:
@@ -87,6 +111,19 @@ class nv_linux_lib():
     def is_path_exists(self, path):
         return os.path.exists(path)
 
+    def is_remote_path_exists(self, sftp, path):
+        if not sftp:
+            self.nv_log_handler.error("Empty sftp handler, failed to "
+                                      "validate the path")
+            return
+        try:
+            sftp.stat(path)
+        except IOError as e:
+            if e.errno == errno.ENOENT:
+                return False
+        else:
+            return True
+
     def get_dirname(self, path):
         '''
         Get the directory name for the specified path
@@ -102,19 +139,21 @@ class nv_linux_lib():
         '''
         shutil.copy(src_file, dst_dir)
 
-    def remote_copy_file(self, src_file, ssh, remote_dir):
+    def remote_copy_file(self, sftp, src_file, remote_dir):
         '''
         Copy a file 'src_file' to a remote system at 'remote_dir'.
-        ssh is a ssh log in object for the specific remote machine.
+        sftp is a sftp session object for the specific remote machine.
         XXX :: Copy may fail when the destination directory permissions are not
         sufficient.
         '''
         try:
-            sftp = ssh.open_sftp()
-            sftp.put(src_file, remote_dir + self.get_last_filename(src_file))
+            if not sftp:
+                return
+            remote_file = os.path.join(remote_dir,
+                                       self.get_last_filename(src_file))
+            sftp.put(src_file, remote_file)
             self.nv_log_handler.debug("%s file copied to %s"
                                       % (src_file, remote_dir))
-            ssh.close()
         except Exception as e:
             self.nv_log_handler.error("Failed to copy to remote machine.")
             raise e
@@ -216,11 +255,23 @@ class nv_os_lib():
             raise ReferenceError("Undefined context, cannot find the program.")
         return self.context.get_remote_host_connection(hostname, username, pwd)
 
-    def close_remote_host_connection(self, ssh):
+    def get_remote_sftp_connection(self, hostname, username, pwd):
         if self.context is None:
             self.nv_log_handler.error("Platform not defined.")
             raise ReferenceError("Undefined context, cannot find the program.")
-        return self.context.close_remote_host_connection(ssh)
+        return self.context.get_remote_sftp_connection(hostname, username, pwd)
+
+    def close_remote_host_connection(self):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+            raise ReferenceError("Undefined context, cannot find the program.")
+        return self.context.close_remote_host_connection()
+
+    def close_remote_sftp_connection(self):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+            raise ReferenceError("Undefined context, cannot find the program.")
+        return self.context.close_remote_sftp_connection()
 
     def make_dir(self,dir_name):
         '''
@@ -232,6 +283,18 @@ class nv_os_lib():
             self.nv_log_handler.error("Platform not defined.")
             raise ReferenceError("Undefined context, cannot find the program.")
         return self.context.make_dir(dir_name)
+
+    def remote_make_dir(self,sftp, dir_name):
+        '''
+        Create a new directory in the remote system if its not exists.
+        params :
+            sftp : the sftp session handle to talk to remote machine.
+            dir_name : Directory name in absolute path.
+        '''
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+            raise ReferenceError("Undefined context, cannot find the program.")
+        return self.context.remote_make_dir(sftp, dir_name)
 
     def remove_dir(self, dir_name):
         if self.context is None:
@@ -250,6 +313,14 @@ class nv_os_lib():
             self.nv_log_handler.error("Platform not defined.")
         return self.context.is_path_exists(path)
 
+    def is_remote_path_exists(self, sftp, path):
+        '''
+        Check if a path exist on a given ssh connection.
+        '''
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.is_remote_path_exists(sftp, path)
+
     def get_dirname(self, path):
         if self.context is None:
             self.nv_log_handler.error("Platform not defined.")
@@ -260,10 +331,10 @@ class nv_os_lib():
             self.nv_log_handler.error("Platform not defined.")
         return self.context.copy_file(src_path, dst_dir)
 
-    def remote_copy_file(self, src_file, hostname, username, pwd, remote_dir):
+    def remote_copy_file(self, sftp, src_file, remote_dir):
         if self.context is None:
             self.nv_log_handler.error("Platform not defined.")
-        return self.context.remote_copy_file(src_file, hostname, username, pwd,
+        return self.context.remote_copy_file(sftp, src_file,
                                              remote_dir)
 
     def get_last_filename(self, file_path):

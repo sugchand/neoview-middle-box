@@ -41,10 +41,13 @@ class nv_webserver_system(db_base):
     server_id = Column(Integer, primary_key = True)
     name = Column(String, nullable = False, default = 'localhost')
     video_path = Column(String, nullable = False)
+    uname = Column(String, nullable = False, default = 'root')
+    pwd = Column(String, nullable = False, default = 'root')
 
     def __repr__(self):
-        return "<nv_webserver(server_id=%d), name = %s, dst_path = %s>" % \
-                (self.sys_id, self.name, self.video_path)
+        return "<nv_webserver(server_id=%d), name = %s, dst_path = %s,"\
+               "uname = %s>" % \
+                (self.sys_id, self.name, self.video_path, self.uname)
 
 class enum_camStatus():
     CONST_CAMERA_NEW = 0 # OFF state/Invalid state.

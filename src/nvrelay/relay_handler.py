@@ -56,7 +56,7 @@ class relay_queue_mgr():
         rel_queue = self.cam_stream_queue_dic[cam_name]
         if rel_queue.empty():
             self.nv_log_handler.debug("Cannot dequeue from a empty queue")
-            return None
+            return [None, None]
         return rel_queue.get()
 
 class relay_ftp_handler():
@@ -66,6 +66,8 @@ class relay_ftp_handler():
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.os_context = nv_os_lib()
+        self.websrv = None 
+        self.sftp = None
         self.queue_mgr = relay_queue_mgr()
 
     def is_file_to_copy_valid(self, file_path):
@@ -94,23 +96,23 @@ class relay_ftp_handler():
         [cp_src, cp_dst] = self.queue_mgr.dequeue_file_pair(cam_name)
         self.queue_mgr.enqueue_file_pair(cam_name, src, dst)
         if cp_src is None or cp_dst is None:
-            return
+            return [None, None]
         if not self.is_file_to_copy_valid(cp_src):
             self.nv_log_handler.debug("%s file size less than %d,"
                                       "Not copying to webserver",
                                       cp_src, NV_CAM_VALID_FILE_SIZE)
-            return
-        self.nv_log_handler.debug("Copying file %s to %s"% \
-                                  (cp_src, cp_dst))
-        self.os_context.copy_file(cp_src, cp_dst)
+            return [None, None]
+        return [cp_src, cp_dst]
 
-    def local_file_transfer(self, nv_cam_src, webserver):
+    def local_file_transfer(self, nv_cam_src, websrv):
         # Copy the file nv_cam_src to dst.
         if not self.is_media_file(nv_cam_src):
             self.nv_log_handler.debug("%s is not a media file, Do not copy" % \
                                       nv_cam_src)
             return
-        dst_path = webserver.video_path
+        if not self.websrv:
+            self.websrv = websrv
+        dst_path = websrv.video_path
         # Get the absolute path directory name of the file.
         cam_src_dir = self.os_context.get_dirname(nv_cam_src)
         # Find the camera folder name in the absolute path.
@@ -119,12 +121,44 @@ class relay_ftp_handler():
         if not self.os_context.is_path_exists(dst_dir):
             self.nv_log_handler.debug("Create the directory %s" % dst_dir)
             self.os_context.make_dir(dst_dir)
-        self.enqeue_copy_file_list(cam_src_dir, nv_cam_src, dst_dir)
-        self.nv_log_handler.debug("Enqueued file %s to %s" %(nv_cam_src, dst_dir))
+        file_pair = self.enqeue_copy_file_list(cam_src_dir, nv_cam_src, dst_dir)
+        cp_src = file_pair[0]
+        cp_dst = file_pair[1]
+        if cp_src is None or cp_dst is None:
+            return
+        self.nv_log_handler.debug("Copying file %s to %s"% \
+                                  (cp_src, cp_dst))
+        self.os_context.copy_file(cp_src, cp_dst)
 
-    def remote_file_transfer(self, nv_cam_src, webserver):
+    def remote_file_transfer(self, nv_cam_src, websrv):
         # Copy the file remotely using scp/sftp.
-        pass
+        if not self.is_media_file(nv_cam_src):
+            self.nv_log_handler.debug("%s is not a media file, Do not copy" % \
+                                      nv_cam_src)
+            return
+        if not self.websrv:
+            self.websrv = websrv
+            self.sftp = self.os_context.get_remote_sftp_connection(
+                                            hostname = websrv.name,
+                                            username = websrv.uname,
+                                            pwd = websrv.pwd)
+        dst_path = websrv.video_path
+        # Get the absolute path directory name of the file.
+        cam_src_dir = self.os_context.get_dirname(nv_cam_src)
+        # Find the camera folder name in the absolute path.
+        cam_src_dir = self.os_context.get_last_filename(cam_src_dir)
+        dst_dir = self.os_context.join_dir(dst_path, cam_src_dir)
+        if not self.os_context.is_remote_path_exists(self.sftp, dst_dir):
+            self.nv_log_handler.debug("Create the remote directory %s" % dst_dir)
+            self.os_context.remote_make_dir(self.sftp, dir_name = dst_dir)
+        file_pair = self.enqeue_copy_file_list(cam_src_dir, nv_cam_src, dst_dir)
+        cp_src = file_pair[0]
+        cp_dst = file_pair[1]
+        if cp_src is None or cp_dst is None:
+            return
+        self.nv_log_handler.debug("Copying file %s to %s remotely"% \
+                                  (cp_src, cp_dst))
+        self.os_context.remote_copy_file(self.sftp,cp_src, cp_dst)
 
     def is_webserver_local(self, webserver):
         '''
@@ -133,8 +167,9 @@ class relay_ftp_handler():
         True : Middlebox and webserver on the same machine
         False : Webserver deployed on a different machine
         '''
-        # TODO :: Lets implement only local now.
-        return True
+        if webserver.name == 'localhost':
+            return True
+        return False
 
     def is_media_file(self, file_path):
         '''
@@ -144,6 +179,8 @@ class relay_ftp_handler():
         return file_path.endswith(file_ext)
 
     def kill_ftp_session(self):
+        self.os_context.close_remote_sftp_connection()
+        self.os_context.close_remote_host_connection()
         self.nv_log_handler.debug("Closing the ftp session..")
         pass
 
@@ -155,8 +192,8 @@ class relay_watcher(FileSystemEventHandler):
     '''
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
+        self.websrv = None
         self.ftp_obj = relay_ftp_handler()
-        self.is_local_wbs = self.ftp_obj.is_webserver_local(None)
         self.is_relay_thread_killed = False # flag for tracking user kill.
 
     def kill_relay_thread(self):
@@ -211,19 +248,24 @@ class relay_watcher(FileSystemEventHandler):
             self.nv_log_handler.debug("Kill signal issued, no file copy")
             return
         GBL_NV_SYNC_OBJ.mutex_lock(RELAY_MUTEX_NAME)
-        # Check if the webserver local, copy the file to a specified location
-        websrv = db_mgr_obj.get_webserver_record()
-        if not websrv:
-            self.nv_log_handler.debug("Webserver is not configured")
-            return
-        if self.is_local_wbs:
-            cam_src_path = event.src_path
-            self.ftp_obj.local_file_transfer(cam_src_path, websrv)
-        else:
-            # The server is remote and need to do the scp over network
-            self.ftp_obj.remote_file_transfer(event.src_path, websrv)
-    #    self.process(event)
-        GBL_NV_SYNC_OBJ.mutex_unlock(RELAY_MUTEX_NAME)
+        try:
+            # Check if the webserver local, copy the file to a specified location
+            self.websrv = db_mgr_obj.get_webserver_record()
+            if not self.websrv:
+                self.nv_log_handler.debug("Webserver is not configured")
+                return
+            is_local_wbs = self.ftp_obj.is_webserver_local(self.websrv)
+            if is_local_wbs:
+                cam_src_path = event.src_path
+                self.ftp_obj.local_file_transfer(cam_src_path, self.websrv)
+            else:
+                # The server is remote and need to do the scp over network
+                self.ftp_obj.remote_file_transfer(event.src_path, self.websrv)
+        except:
+            raise
+        finally:
+            #    self.process(event)
+            GBL_NV_SYNC_OBJ.mutex_unlock(RELAY_MUTEX_NAME)
 
     #def on_deleted(self,event):
     #    self.process(event)

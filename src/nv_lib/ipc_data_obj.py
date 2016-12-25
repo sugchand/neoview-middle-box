@@ -83,12 +83,14 @@ class webserver_data(ipc_data):
     '''
     Class for manage the webserver data
     '''
-    def __init__(self, op, name, videopath):
+    def __init__(self, op, name, videopath, uname , pwd):
         super(webserver_data, self).__init__(ipc_type =
                                              enum_ipcType.CONST_WEBSERVER_OBJ,
                                              ipc_op = op)
         self.name = name
         self.videopath = videopath
+        self.uname = uname
+        self.pwd = pwd
 
 class exitSys_data(ipc_data):
     '''

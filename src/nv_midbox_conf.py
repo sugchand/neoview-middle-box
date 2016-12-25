@@ -48,8 +48,8 @@ class nv_midbox_conf():
         '''
         self.nv_midbox_cli.stop()
         self.nv_relay_mgr.relay_stop()
-        self.nv_relay_mgr.relay_join()
         self.cam_thread_mgr.stop_all_camera_threads()
+        self.nv_relay_mgr.relay_join()
         self.cam_thread_mgr.join_all_camera_threads()
 
     def do_midbox_conf(self):
@@ -108,10 +108,14 @@ class nv_midbox_conf():
         wbsrv_entry = nv_webserver_system(name = srv_name,
                                     server_id = (uuid.uuid4().int>>64)
                                                 & 0xFFFFFFFF,
-                                    video_path = srv_path)
+                                    video_path = srv_path,
+                                    uname = conf_obj.uname,
+                                    pwd = conf_obj.pwd)
         db_mgr_obj.init_webserver_params(wbsrv_entry)
 
     def del_nv_webserver(self, conf_obj):
+        # TODO :: The relay thread must be stopped when a webserver data is
+        # changed.
         db_mgr_obj.del_webserver()
 
     def do_camera_op(self, conf_obj):
