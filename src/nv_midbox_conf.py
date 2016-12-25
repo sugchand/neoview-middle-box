@@ -19,6 +19,7 @@ from src.nvrelay.relay_handler import relay_main
 from src.nv_lib.ipc_data_obj import enum_ipcType, enum_ipcOpCode
 from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
 from src.nv_middlebox_cli import nv_middlebox_cli
+from src.nv_midbox_websock.nv_midbox_wsClient import GBL_WSCLIENT
 
 class nv_midbox_conf():
     NV_MIDBOX_CONF_FNS = {
@@ -49,6 +50,7 @@ class nv_midbox_conf():
         self.nv_midbox_cli.stop()
         self.nv_relay_mgr.relay_stop()
         self.cam_thread_mgr.stop_all_camera_threads()
+        GBL_WSCLIENT.send_notify()
         self.nv_relay_mgr.relay_join()
         self.cam_thread_mgr.join_all_camera_threads()
 
@@ -174,8 +176,10 @@ class nv_midbox_conf():
             db_mgr_obj.add_record(cam_entry)
             db_mgr_obj.db_commit()
             self.nv_log_handler.debug("Added a new camera %s to DB" % cam_name)
-        except:
-            self.nv_log_handler.error("Unknown error, failed to add camera")
+            GBL_WSCLIENT.send_notify()
+        except Exception as e:
+            self.nv_log_handler.error("Unknown error, failed to add camera %s",
+                                      e)
 
     def nv_midbox_del_camera(self):
         cam_name = "None"
@@ -206,6 +210,7 @@ class nv_midbox_conf():
                                   % cam_name)
         cam_record.status = enum_camStatus.CONST_CAMERA_RECORDING
         db_mgr_obj.db_commit()
+        GBL_WSCLIENT.send_notify()
 
     def nv_midbox_stop_stream(self, cam_obj):
         cam_name = cam_obj.name
@@ -223,6 +228,7 @@ class nv_midbox_conf():
         self.cam_thread_mgr.stop_camera_thread(cam_record.cam_id, None)
         db_mgr_obj.db_commit()
         self.nv_log_handler.debug("Stop streaming on camera %s" %cam_name)
+        GBL_WSCLIENT.send_notify()
 
     def nv_midbox_cam_status_update(self, cam_obj):
         '''
