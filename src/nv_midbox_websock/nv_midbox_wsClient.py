@@ -69,7 +69,6 @@ class midbox_wsClient():
             return
 
         ntfy_data = self.create_notify_json()
-        print(ntfy_data)
         try:
             self.ws_client.send(ntfy_data)
             self.ws_client.close()

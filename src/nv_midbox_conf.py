@@ -245,6 +245,7 @@ class nv_midbox_conf():
             return
         cam_record.status = cam_obj.status
         db_mgr_obj.db_commit()
+        GBL_WSCLIENT.send_notify()
         self.nv_log_handler.debug("%s camera has new status %d", cam_name,
                                   cam_obj.status)
 
