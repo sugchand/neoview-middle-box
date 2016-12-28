@@ -148,6 +148,26 @@ class nv_middlebox_cli(threading.Thread):
         except Exception as e:
             self.nv_log_handler.error("Failed to add the camera at cli, %s", e)
 
+    def nv_midbox_del_camera(self):
+        # Pass only the camera name for deleting the camera.
+        cam_name = (input("Enter Camera Name: "))
+        cam_data = camera_data(op = enum_ipcOpCode.CONST_DEL_CAMERA_OP,
+                               name = cam_name,
+                               status= None,
+                               ip = None,
+                               macAddr = None,
+                               port = None,
+                               time_len = None,
+                               uname = None,
+                               pwd = None,
+                               desc = None
+                               )
+        try:
+            GBL_CONF_QUEUE.enqueue_data(obj_len = 1, obj_value = [cam_data])
+        except Exception as e:
+            self.nv_log_handler.error("Failed to delete the camera at cli %s",
+                                      e)
+
     def nv_midbox_start_stream(self):
         cam_name = (input("Enter Camera Name: "))
         filter_arg = {'name' : cam_name}

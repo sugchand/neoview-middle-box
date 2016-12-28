@@ -181,10 +181,17 @@ class nv_midbox_conf():
             self.nv_log_handler.error("Unknown error, failed to add camera %s",
                                       e)
 
-    def nv_midbox_del_camera(self):
-        cam_name = "None"
-        self.nv_log_handler.debug("Deleted the camera %s from the DB" % cam_name)
-        pass
+    def nv_midbox_del_camera(self, cam_obj):
+        self.nv_midbox_stop_stream(cam_obj)
+        cam_name = cam_obj.name
+        filter_arg = {'name' : cam_name}
+        try:
+            cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera,
+                                                                   filter_arg)
+            db_mgr_obj.delete_record(cam_record)
+        except:
+            self.nv_log_handler.error("Failed to delete the camera %s",
+                                      cam_obj.name)
 
     def nv_midbox_start_stream(self, cam_obj):
         # TODO :: Validate the camera name
