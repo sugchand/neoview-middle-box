@@ -50,9 +50,24 @@ class nv_midbox_conf():
         self.nv_midbox_cli.stop()
         self.nv_relay_mgr.relay_stop()
         self.cam_thread_mgr.stop_all_camera_threads()
-        GBL_WSCLIENT.send_notify()
         self.nv_relay_mgr.relay_join()
         self.cam_thread_mgr.join_all_camera_threads()
+        # Update all the camera status to ready before exiting.
+
+        if not db_mgr_obj.get_tbl_record_cnt(nv_camera):
+            self.nv_log_handler.debug("Camera table empty in the system"\
+                                      "not modifying the camera status")
+            return
+        cam_records = db_mgr_obj.get_tbl_records(nv_camera)
+        for camera in cam_records:
+            if camera.status == enum_camStatus.CONST_CAMERA_DEFERRED or \
+                camera.status == enum_camStatus.CONST_CAMERA_NEW:
+                self.nv_log_handler.error("Camera is in invalid state while"\
+                                           "exiting..")
+                continue
+            camera.status = enum_camStatus.CONST_CAMERA_READY
+        db_mgr_obj.db_commit()
+        GBL_WSCLIENT.send_notify()
 
     def do_midbox_conf(self):
         '''

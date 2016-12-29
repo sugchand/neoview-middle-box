@@ -137,6 +137,9 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
         except ValueError:
             default_nv_log_handler.debug("Received non json data, do nothing..")
             return
+        if len(ws_json) > 1:
+            default_nv_log_handler.debug("More fields in json, exiting..")
+            return
         for data in ws_json:
             if not 'token' in data:
                 default_nv_log_handler.debug("token field is missing, do nothing")
@@ -158,7 +161,11 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
 
 class IndexPageHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("index.html")
+        try:
+            self.render("index.html")
+        except Exception as e:
+            default_nv_log_handler.debug("Cannot render the page correctly..%s",
+                                         e)
 
 class ServerIndexPageHandler(tornado.web.RequestHandler):
     def get(self):
@@ -181,7 +188,6 @@ class nv_midbox_ws(threading.Thread):
 
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
-        self.nv_log_handler.error("In ws...")
         threading.Thread.__init__(self, None, None, "nv_midbox_ws")
         self.daemon = True
 
