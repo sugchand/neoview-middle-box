@@ -149,6 +149,7 @@ class db_manager():
                                     " instance")
             return
         self.clean_table(table_name=nv_webserver_system)
+        self.nv_webserver = None
 
     def create_system_record(self):
         if self.db_session is None:

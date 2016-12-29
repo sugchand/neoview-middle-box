@@ -32,6 +32,7 @@ NV_MIDBOX_CLI_FNS = {
                 "LIST-ALL-CAMERAS" : "nv_midbox_list_cameras",
                 "LIST-SYSTEM" : "list_midbox_system",
                 "ADD-WEBSERVER" : "add_nv_webserver",
+                "DEL-WEBSERVER" : "del_nv_webserver",
                 "QUIT-MIDBOX" : "nv_midbox_stop"
                     }
 
@@ -106,6 +107,18 @@ class nv_middlebox_cli(threading.Thread):
                                     obj_value = [ws_data])
         except:
             self.nv_log_handler.error("Failed to configure the webserver")
+
+    def del_nv_webserver(self):
+        try:
+            ws_data = webserver_data(op = enum_ipcOpCode.CONST_DEL_WEBSERVER_OP,
+                                     name = None,
+                                     videopath = None,
+                                     uname = None,
+                                     pwd = None)
+            GBL_CONF_QUEUE.enqueue_data(obj_len = 1,
+                                    obj_value = [ws_data])
+        except:
+            self.nv_log_handler.error("Failed to delete the webserver")
 
     def nv_midbox_stop(self):
         exit_data = exitSys_data()
