@@ -42,6 +42,21 @@ class nv_midbox_conf():
             self.exit_all_threads()
 
 
+    def nv_midbox_allCam_status_update(self, status):
+        '''
+        Update all the camera status to 'status'
+        '''
+        # Update all the camera status to deferred before exiting.
+        if not db_mgr_obj.get_tbl_record_cnt(nv_camera):
+            self.nv_log_handler.debug("Camera table empty in the system"\
+                                      "not modifying the camera status")
+            return
+        cam_records = db_mgr_obj.get_tbl_records(nv_camera)
+        for camera in cam_records:
+            camera.status = status
+        db_mgr_obj.db_commit()
+        GBL_WSCLIENT.send_notify()
+
     def exit_all_threads(self):
         '''
         Function to stop all the threads that are started by the midbox conf.
@@ -49,25 +64,13 @@ class nv_midbox_conf():
         '''
         self.nv_midbox_cli.stop()
         self.nv_relay_mgr.relay_stop()
+        # Set cameras to deferred while stopping all the threads.
+        self.nv_midbox_allCam_status_update(enum_camStatus.CONST_CAMERA_DEFERRED)
         self.cam_thread_mgr.stop_all_camera_threads()
         self.nv_relay_mgr.relay_join()
         self.cam_thread_mgr.join_all_camera_threads()
-        # Update all the camera status to ready before exiting.
-
-        if not db_mgr_obj.get_tbl_record_cnt(nv_camera):
-            self.nv_log_handler.debug("Camera table empty in the system"\
-                                      "not modifying the camera status")
-            return
-        cam_records = db_mgr_obj.get_tbl_records(nv_camera)
-        for camera in cam_records:
-            if camera.status == enum_camStatus.CONST_CAMERA_DEFERRED or \
-                camera.status == enum_camStatus.CONST_CAMERA_NEW:
-                self.nv_log_handler.error("Camera is in invalid state while"\
-                                           "exiting..")
-                continue
-            camera.status = enum_camStatus.CONST_CAMERA_READY
-        db_mgr_obj.db_commit()
-        GBL_WSCLIENT.send_notify()
+        #Set camera thread to ready before exiting..
+        self.nv_midbox_allCam_status_update(enum_camStatus.CONST_CAMERA_READY)
 
     def do_midbox_conf(self):
         '''
