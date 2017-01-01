@@ -180,6 +180,8 @@ class Application(tornado.web.Application):
             (r'/userwebsocket', UserWebSocketHandler)
         ]
         settings = {
+            'debug' : True,
+            'static_path' : 'src/nv_midbox_websock/templates/static/',
             'template_path': 'src/nv_midbox_websock/templates'
         }
         tornado.web.Application.__init__(self, handlers, **settings)

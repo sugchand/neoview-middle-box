@@ -1,24 +1,72 @@
-<html>
-<title>Tornado WebSockets</title>
-<script>
-    var ws;
- 
-    function onLoad() {
-        ws = new WebSocket("ws://localhost:8080/userwebsocket");
- 
-        ws.onmessage = function(e) {
-           alert(e.data);
-        };
-    }
- 
-    function sendMsg() {
-        ws.send(document.getElementById('msg').value);
-    }
-</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous" />
+    <link rel="stylesheet" type="text/css" href={{ static_url("css/main.css") }}>
+    <title>Neoview Landing Page</title>
+    <style>
+      .thumb {
+        margin: 0 14px 30px;
+        float: left;
+        width:350px;
+        height:300px;
+        border:1px solid black;
+        padding: 0;
+      }
+      .cam-desc {
+        width: 348px;
+        padding: 30px 0;
+        background-color: #fcf4f4;
+        margin: 25px 0;
+      }
+    </style>
 
-<body onload="onLoad();"> 
-</body> 
-<strong>Message to Send:</strong> <input type="text" id="msg" maxlength="25">
- <input type="button" onclick="sendMsg();" value="Send">
+  </head>
+
+  <body>
+      <!-- Page Content -->
+    <div class="container" ng-app="landingApp" ng-controller="landingController">
+      <div class="row">
+        <div class="col-lg-12">
+          <h1 class="page-header">Neoview Dashboard</h1>
+        </div>
+        <div class="col-lg-3 col-md-4 col-xs-6 thumb" ng-repeat="camera in cameraInfo">
+          <div class="col-xs-12">
+            <h3>{{!camera.name}} </h3>
+            <i class="fa fa-5x fa-camera" style="padding-left:33%;"></i>
+          </div>
+          <div class="cam-desc col-xs-12">
+            <div class="col-md-6 col-xs-6">
+              <h4>Camera Status </h4>
+            </div>
+            <div class="col-md-6 col-xs-6">
+              <label class="switch">
+                <input type="checkbox" ng-checked="camera.status">
+                <div class="slider round"></div>
+              </label>
+            </div>
+            <div class="col-md-6 col-xs-6">
+              <h4>Description </h4>
+            </div>
+            <div class="col-md-6 col-xs-6">
+              <h5>{{!camera.description}}</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-websocket/2.0.1/angular-websocket.js"></script>
+    <script src="{{ static_url('js/app.js') }}"></script>
+    <!-- /.container -->
+  </body>
+
 </html>
-
