@@ -177,11 +177,12 @@ class Application(tornado.web.Application):
         handlers = [
             (r'/', IndexPageHandler),
             (r'/server', ServerIndexPageHandler),
-            (r'/userwebsocket', UserWebSocketHandler)
+            (r'/userwebsocket', UserWebSocketHandler),
+            (r"/static/(.*)",tornado.web.StaticFileHandler, {"path": "./static"},)
         ]
         settings = {
             'debug' : True,
-            'static_path' : 'src/nv_midbox_websock/templates/static/',
+            "static_path": "src/nv_midbox_websock/templates/static",
             'template_path': 'src/nv_midbox_websock/templates'
         }
         tornado.web.Application.__init__(self, handlers, **settings)
