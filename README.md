@@ -66,7 +66,7 @@ Middlebox copies the camera video chunks to the predefined directory in
 webserver. Middlebox also propagate camera state information to the webserver on
 a change event.
 
-# How to Use
+## How to Use
 
 * [OPTIONAL] Install the virtual environment if not present. This step is needed only when
 middlebox is running in virtual environment.
@@ -81,9 +81,7 @@ middlebox is running in virtual environment.
 
 * [OPTIONAL] Activate the virtualenv
 
-  `cd middlebox/bin`
-
-  `source activate` or `. activate`
+  `source middlebox/bin/activate` or `. middlebox/bin/activate`
 
 * Install the prerequisite libraries for the software.
 

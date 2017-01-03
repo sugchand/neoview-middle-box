@@ -65,12 +65,10 @@ class websock_connectionPool():
         connections
         '''
         GBL_NV_SYNC_OBJ.mutex_lock(self.WS_CONN_MUTEX)
-        print("Writing camera...")
         for conn in self.connections:
             try:
                 cam_json = []
                 cam_json.append(conn.get_camera_json(camera))
-                print(cam_json)
                 self.write_to_connection(conn, json.dumps(cam_json))
             except:
                 self.nv_log_handler.error("Failed to write camera json to conn")
@@ -119,6 +117,9 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
         try:
             cameras = db_mgr_obj.get_tbl_records(nv_camera)
             if not cameras:
+                # No cameras configured, return empty json.
+                cam_json.append({})
+                GBL_WEBSOCK_POOL.write_to_all_connections(json.dumps(cam_json))
                 return
             for camera in cameras:
                 cam_json.append(self.get_camera_json(camera))
