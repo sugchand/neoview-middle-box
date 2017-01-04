@@ -87,3 +87,5 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+src/nv_midbox_websock/templates/static/bower_components/
