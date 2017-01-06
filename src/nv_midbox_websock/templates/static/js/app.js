@@ -9,6 +9,6 @@ angular.module('landingApp', [])
 
   $scope.changeChk = function(cameraInfo, status) {
     cameraInfo.status = status;
-    ws.send(JSON.stringify(cameraInfo));
+    ws.send(JSON.stringify([cameraInfo]));
   };
 }]);
