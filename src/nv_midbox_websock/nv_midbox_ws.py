@@ -22,6 +22,9 @@ from src.nv_logger import default_nv_log_handler
 from src.nv_lib.nv_sync_lib import GBL_NV_SYNC_OBJ
 from src.nv_midbox_websock.nv_midbox_wsClient import GBL_WSCLIENT
 import json
+from src.nv_lib.ipc_data_obj import camera_data,enum_ipcOpCode
+from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
+from src.nvdb.nvdb_manager import enum_camStatus
 
 class websock_connectionPool():
     '''
@@ -130,6 +133,41 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
             default_nv_log_handler.error("Exception while opening user websocket"
                                          " %s", e)
 
+    def update_camera_status(self, name, status):
+        # Function to update the camera status.
+        if status is enum_camStatus.CONST_CAMERA_RECORDING:
+            cam_ipcData = camera_data(
+                                op = enum_ipcOpCode.CONST_START_CAMERA_STREAM_OP,
+                                name = name,
+                                status = status,
+                                ip = None,
+                                macAddr = None,
+                                port = None,
+                                time_len = None,
+                                uname = None,
+                                pwd = None,
+                                desc = None
+                                )
+        elif status is enum_camStatus.CONST_CAMERA_READY:
+            cam_ipcData = camera_data(
+                                op = enum_ipcOpCode.CONST_STOP_CAMERA_STREAM_OP,
+                                name = name,
+                                status = status,
+                                ip = None,
+                                macAddr = None,
+                                port = None,
+                                time_len = None,
+                                uname = None,
+                                pwd = None,
+                                desc = None
+                                )
+        try:
+            GBL_CONF_QUEUE.enqueue_data(obj_len = 1,
+                                obj_value = [cam_ipcData])
+        except Exception as e:
+            default_nv_log_handler.error("Exception in ws, cannot send status"
+                                         "update, %s", e)
+
     def on_message(self, message):
         # TODO : Send out message to the midbox conf to change the camera
         # settings.
@@ -141,15 +179,28 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
         if len(ws_json) > 1:
             default_nv_log_handler.debug("More fields in json, exiting..")
             return
-        for data in ws_json:
-            if not 'token' in data:
-                default_nv_log_handler.debug("token field is missing, do nothing")
-                return
-            token_id = data['token']
-            if GBL_WSCLIENT.validate_token(token_id = token_id):
-                GBL_WSCLIENT.delete_token(token_id = token_id)
-                # Message from the system itself.
-                self.send_all_camera_to_all_ws()
+        data = ws_json[0] #Only one element present in the list.
+        if not 'token' in data:
+            default_nv_log_handler.debug("token field is missing, do nothing")
+            return
+        token_id = data['token']
+        if GBL_WSCLIENT.validate_token(token_id = token_id):
+            GBL_WSCLIENT.delete_token(token_id = token_id)
+            # Message from the system itself.
+            # Notification to the server about the system update.
+            self.send_all_camera_to_all_ws()
+            return
+        elif len(data) != 4:
+            default_nv_log_handler.error("Cannot Parse json in ws, length"\
+                                        "is invalid in %s.", data)
+            return
+        # Request from the client to change the state of camera.
+        if not 'name' in data and \
+            not 'status' in data:
+            default_nv_log_handler.error("Invalid JSON format, ws cannot "\
+                                         "process json %s", data)
+            return
+        self.update_camera_status(name = data['name'], status = data['status'])
 
     def on_close(self):
         GBL_WEBSOCK_POOL.remove_connection(self)

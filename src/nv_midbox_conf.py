@@ -81,7 +81,7 @@ class nv_midbox_conf():
                 conf_obj = GBL_CONF_QUEUE.dequeue_data()
                 if conf_obj is None:
                     # The queue is empty, nothing to configure.
-                    sleep(5)
+                    sleep(1)
                     continue
                 obj_list = conf_obj["value"]
                 for obj in obj_list:
@@ -230,6 +230,7 @@ class nv_midbox_conf():
             self.nv_log_handler.error("Cannot start the streaming until the"
                                       " camera is ready, current state is %d",
                                       cam_record.status)
+            GBL_WSCLIENT.send_notify()
             return
         self.cam_thread_mgr.start_camera_thread(cam_record)
         self.nv_log_handler.debug("staring the stream recording on camera %s"
@@ -249,6 +250,7 @@ class nv_midbox_conf():
             self.nv_log_handler.error("Cannot stop the streaming until the"
                                      " camera is ready, current state is %d",
                                      cam_record.status)
+            GBL_WSCLIENT.send_notify()
             return
         cam_record.status = enum_camStatus.CONST_CAMERA_DEFERRED
         self.cam_thread_mgr.stop_camera_thread(cam_record.cam_id, None)

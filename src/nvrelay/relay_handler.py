@@ -105,60 +105,67 @@ class relay_ftp_handler():
         return [cp_src, cp_dst]
 
     def local_file_transfer(self, nv_cam_src, websrv):
-        # Copy the file nv_cam_src to dst.
-        if not self.is_media_file(nv_cam_src):
-            self.nv_log_handler.debug("%s is not a media file, Do not copy" % \
-                                      nv_cam_src)
-            return
-        if not self.websrv:
-            self.websrv = websrv
-        dst_path = websrv.video_path
-        # Get the absolute path directory name of the file.
-        cam_src_dir = self.os_context.get_dirname(nv_cam_src)
-        # Find the camera folder name in the absolute path.
-        cam_src_dir = self.os_context.get_last_filename(cam_src_dir)
-        dst_dir = self.os_context.join_dir(dst_path, cam_src_dir)
-        if not self.os_context.is_path_exists(dst_dir):
-            self.nv_log_handler.debug("Create the directory %s" % dst_dir)
-            self.os_context.make_dir(dst_dir)
-        file_pair = self.enqeue_copy_file_list(cam_src_dir, nv_cam_src, dst_dir)
-        cp_src = file_pair[0]
-        cp_dst = file_pair[1]
-        if cp_src is None or cp_dst is None:
-            return
-        self.nv_log_handler.debug("Copying file %s to %s"% \
-                                  (cp_src, cp_dst))
-        self.os_context.copy_file(cp_src, cp_dst)
+        try:
+            # Copy the file nv_cam_src to dst.
+            if not self.is_media_file(nv_cam_src):
+                self.nv_log_handler.debug("%s is not a media file, Do not copy" % \
+                                          nv_cam_src)
+                return
+            if not self.websrv:
+                self.websrv = websrv
+            dst_path = websrv.video_path
+            # Get the absolute path directory name of the file.
+            cam_src_dir = self.os_context.get_dirname(nv_cam_src)
+            # Find the camera folder name in the absolute path.
+            cam_src_dir = self.os_context.get_last_filename(cam_src_dir)
+            dst_dir = self.os_context.join_dir(dst_path, cam_src_dir)
+            if not self.os_context.is_path_exists(dst_dir):
+                self.nv_log_handler.debug("Create the directory %s" % dst_dir)
+                self.os_context.make_dir(dst_dir)
+            file_pair = self.enqeue_copy_file_list(cam_src_dir, nv_cam_src, dst_dir)
+            cp_src = file_pair[0]
+            cp_dst = file_pair[1]
+            if cp_src is None or cp_dst is None:
+                return
+            self.nv_log_handler.debug("Copying file %s to %s"% \
+                                      (cp_src, cp_dst))
+            self.os_context.copy_file(cp_src, cp_dst)
+        except Exception as e:
+                self.nv_log_handler.debug("Failed to copy file to webserver %s", e)
 
     def remote_file_transfer(self, nv_cam_src, websrv):
-        # Copy the file remotely using scp/sftp.
-        if not self.is_media_file(nv_cam_src):
-            self.nv_log_handler.debug("%s is not a media file, Do not copy" % \
-                                      nv_cam_src)
-            return
-        if not self.websrv:
-            self.websrv = websrv
-            self.sftp = self.os_context.get_remote_sftp_connection(
-                                            hostname = websrv.name,
-                                            username = websrv.uname,
-                                            pwd = websrv.pwd)
-        dst_path = websrv.video_path
-        # Get the absolute path directory name of the file.
-        cam_src_dir = self.os_context.get_dirname(nv_cam_src)
-        # Find the camera folder name in the absolute path.
-        cam_src_dir = self.os_context.get_last_filename(cam_src_dir)
-        dst_dir = self.os_context.join_dir(dst_path, cam_src_dir)
-        if not self.os_context.is_remote_path_exists(self.sftp, dst_dir):
-            self.nv_log_handler.debug("Create the remote directory %s" % dst_dir)
-            self.os_context.remote_make_dir(self.sftp, dir_name = dst_dir)
-        file_pair = self.enqeue_copy_file_list(cam_src_dir, nv_cam_src, dst_dir)
-        cp_src = file_pair[0]
-        cp_dst = file_pair[1]
-        if cp_src is None or cp_dst is None:
-            return
-        self.nv_log_handler.debug("Copying file %s to %s remotely"% \
-                                  (cp_src, cp_dst))
-        self.os_context.remote_copy_file(self.sftp,cp_src, cp_dst)
+        try:
+            # Copy the file remotely using scp/sftp.
+            if not self.is_media_file(nv_cam_src):
+                self.nv_log_handler.debug("%s is not a media file, Do not copy" % \
+                                          nv_cam_src)
+                return
+            if not self.websrv:
+                self.websrv = websrv
+                self.sftp = self.os_context.get_remote_sftp_connection(
+                                                hostname = websrv.name,
+                                                username = websrv.uname,
+                                                pwd = websrv.pwd)
+            dst_path = websrv.video_path
+            # Get the absolute path directory name of the file.
+            cam_src_dir = self.os_context.get_dirname(nv_cam_src)
+            # Find the camera folder name in the absolute path.
+            cam_src_dir = self.os_context.get_last_filename(cam_src_dir)
+            dst_dir = self.os_context.join_dir(dst_path, cam_src_dir)
+            if not self.os_context.is_remote_path_exists(self.sftp, dst_dir):
+                self.nv_log_handler.debug("Create the remote directory %s" % dst_dir)
+                self.os_context.remote_make_dir(self.sftp, dir_name = dst_dir)
+            file_pair = self.enqeue_copy_file_list(cam_src_dir, nv_cam_src, dst_dir)
+            cp_src = file_pair[0]
+            cp_dst = file_pair[1]
+            if cp_src is None or cp_dst is None:
+                return
+            self.nv_log_handler.debug("Copying file %s to %s remotely"% \
+                                      (cp_src, cp_dst))
+            self.os_context.remote_copy_file(self.sftp,cp_src, cp_dst)
+        except Exception as e:
+            self.nv_log_handler.debug("Failed to remote copy file to webserver"
+                                      "%s", e)
 
     def is_webserver_local(self, webserver):
         '''
