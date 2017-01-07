@@ -29,14 +29,14 @@
 
   </head>
 
-  <body>
-      <!-- Page Content -->
-    <div class="container" ng-app="landingApp" ng-controller="landingController">
+  <body ng-app="landingApp">
+    <!-- Page Content -->
+    <div class="container" ng-controller="landingController">
       <div class="row">
         <div class="col-lg-12">
           <h1 class="page-header">Neoview Dashboard</h1>
         </div>
-        <div class="col-lg-3 col-md-4 col-xs-6 thumb" ng-repeat="camera in cameraInfo">
+        <div class="col-lg-3 col-md-4 col-xs-6 thumb" ng-if="cameraInfo && cameraInfo.length > 0" ng-repeat="camera in cameraInfo track by $index">
           <div class="col-xs-12">
             <h3>{{!camera.name}} </h3>
             <i class="fa fa-5x fa-camera" style="padding-left:33%;"></i>
@@ -47,7 +47,7 @@
             </div>
             <div class="col-md-6 col-xs-6">
               <label class="switch">
-                <input type="checkbox" ng-checked="camera.status">
+                <input type="checkbox" ng-model="chkboxVal" ng-true-value="2" ng-false-value="1" ng-disabled="camera.status !== 1 && camera.status !== 2" ng-checked="camera.status === 2" ng-change="changeChk(camera, chkboxVal)">
                 <div class="slider round"></div>
               </label>
             </div>
@@ -61,10 +61,9 @@
         </div>
       </div>
     </div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-websocket/2.0.1/angular-websocket.js"></script>
+    <script src="static/js/js_lib/jquery.js"></script>
+    <script src="static/js/js_lib/angular.js"></script>
+    <script src="static/js/js_lib/bootstrap.js"></script>
     <script src="static/js/app.js"></script>
     <!-- /.container -->
   </body>
