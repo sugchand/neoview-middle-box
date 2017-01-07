@@ -48,7 +48,7 @@ class nv_midbox_conf():
         '''
         # Update all the camera status to deferred before exiting.
         if not db_mgr_obj.get_tbl_record_cnt(nv_camera):
-            self.nv_log_handler.debug("Camera table empty in the system"\
+            self.nv_log_handler.debug("Camera table empty in the system "\
                                       "not modifying the camera status")
             return
         cam_records = db_mgr_obj.get_tbl_records(nv_camera)

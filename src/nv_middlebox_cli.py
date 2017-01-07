@@ -66,7 +66,11 @@ class nv_middlebox_cli(threading.Thread):
             print_color_string("Invalid Choice, Exiting...", color = "red")
             return 0
 
-        choice = int(choice)
+        try:
+            choice = int(choice)
+        except ValueError:
+            print_color_string("Invalid Choice, Exiting", color = "red")
+            return 0
         if choice < 0 or choice > i:
             print_color_string("Invalid Choice, Exiting...", color = "red")
             return 0
