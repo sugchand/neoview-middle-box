@@ -43,11 +43,11 @@
           </div>
           <div class="cam-desc col-xs-12">
             <div class="col-md-6 col-xs-6">
-              <h4>Camera Status -- {{!camera.status}} </h4>
+              <h4>Camera Status </h4>
             </div>
             <div class="col-md-6 col-xs-6">
               <label class="switch">
-                <input type="checkbox" ng-model="chkboxVal" ng-true-value="2" ng-false-value="1" ng-disabled="(camera.status !== 1 && camera.status !== 2) || disabled" ng-checked="camera.status === 2" ng-change="changeChk($index, chkboxVal)">
+                <input type="checkbox" ng-model="chkboxVal" ng-true-value="2" ng-false-value="1" ng-disabled="(camera.status !== 1 && camera.status !== 2) || camera.disabled" ng-checked="camera.status === 2" ng-change="changeChk($index, chkboxVal)">
                 <div class="slider round"></div>
               </label>
             </div>
@@ -55,7 +55,7 @@
               <h4>Description </h4>
             </div>
             <div class="col-md-6 col-xs-6">
-              <h5>{{!camera.description}}</h5>
+              <h5>{{!camera.description}}</h5></br>
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ angular.module('landingApp', [])
     $scope.cameraInfo = [];
     for(var i=0;i<parsed.length;i++) {
       if(!isEmpty(parsed[i])) {
-        $scope.cameraInfo[i] = parsed[i];  
+        $scope.cameraInfo[i] = parsed[i];
       }
     }
     $scope.$apply();
@@ -16,13 +16,13 @@ angular.module('landingApp', [])
 
   $scope.changeChk = function(index, status) {
     var cameraInfo = $scope.cameraInfo[index];
+    delete cameraInfo.disabled;
     cameraInfo.status = status;
     ws.send(JSON.stringify([cameraInfo]));
-    debugger;
     if(status === 1) {
-      $scope.disabled = true;
+      $scope.cameraInfo[index].disabled = true;
     } else {
-      $scope.disabled = false;
+      $scope.cameraInfo[index].disabled = false;
     }
   };
 
