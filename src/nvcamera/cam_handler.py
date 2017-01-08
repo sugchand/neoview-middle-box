@@ -39,9 +39,9 @@ class cam_handler():
         self.time_lapse = cam_tbl_entry.stream_file_time_sec
         
         self.curr_stream_cnt = 0
-        self.cam_dir = str(cam_tbl_entry.cam_id)
-        self.cam_id = self.cam_dir
+        self.cam_id = str(cam_tbl_entry.cam_id)
         self.name = cam_tbl_entry.name
+        self.cam_dir = self.name
         self.username = cam_tbl_entry.username
         self.pwd = cam_tbl_entry.password
         self.cam_ip = str(ipaddress.IPv4Address(cam_tbl_entry.ip_addr))
