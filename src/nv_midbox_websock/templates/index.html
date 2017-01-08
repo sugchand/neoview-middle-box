@@ -47,7 +47,7 @@
             </div>
             <div class="col-md-6 col-xs-6">
               <label class="switch">
-                <input type="checkbox" ng-model="chkboxVal" ng-true-value="2" ng-false-value="1" ng-disabled="camera.status !== 1 && camera.status !== 2" ng-checked="camera.status === 2" ng-change="changeChk(camera, chkboxVal)">
+                <input type="checkbox" ng-model="chkboxVal" ng-true-value="2" ng-false-value="1" ng-disabled="(camera.status !== 1 && camera.status !== 2) || camera.disabled" ng-checked="camera.status === 2" ng-change="changeChk($index, chkboxVal)">
                 <div class="slider round"></div>
               </label>
             </div>
@@ -55,7 +55,7 @@
               <h4>Description </h4>
             </div>
             <div class="col-md-6 col-xs-6">
-              <h5>{{!camera.description}}</h5>
+              <h5>{{!camera.description}}</h5></br>
             </div>
           </div>
         </div>
@@ -64,7 +64,7 @@
     <script src="static/js/js_lib/jquery.js"></script>
     <script src="static/js/js_lib/angular.js"></script>
     <script src="static/js/js_lib/bootstrap.js"></script>
-    <script src="static/js/app.js"></script>
+    <script src="static/js/app.js?r=<%= session.getId()%>"></script>
     <!-- /.container -->
   </body>
 
