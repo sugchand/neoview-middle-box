@@ -68,6 +68,13 @@ a change event.
 
 ## How to Use
 
+* Install the media player library vlc and non-X window libraries. The
+installation can be done as below on a Ubuntu(Debian) machine.
+
+  `apt-get install vlc`
+
+  `apt-get install vlc-nox`
+
 * [OPTIONAL] Install the virtual environment if not present. This step is needed only when
 middlebox is running in virtual environment.
 
