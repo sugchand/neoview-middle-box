@@ -136,7 +136,7 @@ class db_manager():
         self.nv_webserver = webserver_db_entry
         self.nv_log_handler.info("Setting the webserver DB record %d"
                                  % webserver_db_entry.server_id)
-        self.add_record(self.nv_midbox_db_entry)
+        self.add_record(self.nv_webserver)
         self.db_commit()
 
     def del_webserver(self):
@@ -171,6 +171,14 @@ class db_manager():
         return self.nv_midbox_db_entry
 
     def get_webserver_record(self):
+        if not self.nv_webserver:
+            webserver_lst = self.get_tbl_records(nv_webserver_system)
+            if not webserver_lst:
+                return None
+            if len(webserver_lst) != 1:
+                self.nv_log_handler.error("Multiple webserver instance..")
+                return None
+            self.nv_webserver = webserver_lst[0]
         return self.nv_webserver
 
     def add_record(self, record_obj):
