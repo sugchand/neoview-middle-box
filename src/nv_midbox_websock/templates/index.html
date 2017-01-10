@@ -6,16 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-    <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
-    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous" />
-    <link rel="stylesheet" type="text/css" href="static/css/main.css">
+    <link type="text/css" rel="stylesheet" href="static/css/bootstrap.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" />
+    <link rel="stylesheet" type="text/css" href="static/css/main.css" />
     <title>Neoview Landing Page</title>
     <style>
       .thumb {
         margin: 0 14px 30px;
         float: left;
         width:350px;
-        height:300px;
+        height:315px;
         border:1px solid black;
         padding: 0;
       }
@@ -47,8 +47,8 @@
             </div>
             <div class="col-md-6 col-xs-6">
               <label class="switch">
-                <input type="checkbox" ng-model="chkboxVal" ng-true-value="2" ng-false-value="1" ng-disabled="(camera.status !== 1 && camera.status !== 2) || camera.disabled" ng-checked="camera.status === 2" ng-change="changeChk($index, chkboxVal)">
-                <div class="slider round"></div>
+                <input type="checkbox" ng-model="chkboxVal" ng-true-value="2" ng-false-value="1" ng-checked="camera.status === 2" ng-change="changeChk($index, chkboxVal, ((camera.status !== 1 && camera.status !== 2) || camera.disabled))">
+                <div class="slider round" ng-class="{ 'disChkbox' : (camera.status !== 1 && camera.status !== 2) || camera.disabled }"></div>
               </label>
             </div>
             <div class="col-md-6 col-xs-6">
@@ -64,6 +64,7 @@
     <script src="static/js/js_lib/jquery.js"></script>
     <script src="static/js/js_lib/angular.js"></script>
     <script src="static/js/js_lib/bootstrap.js"></script>
+    <script src="static/js/js_lib/underscore.js"></script>
     <script src="static/js/app.js?r=<%= session.getId()%>"></script>
     <!-- /.container -->
   </body>
