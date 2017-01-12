@@ -16,6 +16,7 @@ from src.nvdb.nvdb_manager import db_mgr_obj, nv_midbox_system, enum_camStatus
 from src.nvdb.nvdb_manager import nv_camera
 from src.nv_lib.ipc_data_obj import webserver_data, exitSys_data,camera_data, enum_ipcOpCode
 from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
+from src.nv_exception import midboxExitException
 
 try:
     from termcolor import colored
@@ -75,9 +76,15 @@ class nv_middlebox_cli(threading.Thread):
             print_color_string("Invalid Choice, Exiting...", color = "red")
             return 0
 
-        fn = list(NV_MIDBOX_CLI_FNS.values())[choice]
-        fn = "self." + fn
-        eval(fn)()
+        try:
+            fn = list(NV_MIDBOX_CLI_FNS.values())[choice]
+            fn = "self." + fn
+            eval(fn)()
+        except midboxExitException:
+            raise
+        except Exception as e:
+            self.nv_log_handler.error("Exception in CLI while running command"
+                                      "%s", e)
         return 0
 
     def nv_middlebox_cli_main(self):
@@ -89,6 +96,10 @@ class nv_middlebox_cli(threading.Thread):
             except KeyboardInterrupt:
                 self.nv_midbox_stop()
                 break
+            except midboxExitException:
+                break
+            except:
+                raise
 
     def add_nv_webserver(self):
         srv_name = input("Enter webserver Name(dafult = localhost) : ")
@@ -130,6 +141,8 @@ class nv_middlebox_cli(threading.Thread):
             GBL_CONF_QUEUE.enqueue_data(obj_len = 1, obj_value = [exit_data])
         except Exception as e:
             self.nv_log_handler.error("Failed to send stop signal..%s", e)
+        finally:
+            raise midboxExitException
 
     def nv_midbox_add_camera(self):
         # TODO :: Validate user inputs for right input data,

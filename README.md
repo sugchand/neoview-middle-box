@@ -78,7 +78,7 @@ installation can be done as below on a Ubuntu(Debian) machine.
 * [OPTIONAL] Install the virtual environment if not present. This step is needed only when
 middlebox is running in virtual environment.
 
-  `pip3 install virtualenv`
+  `apt-get install virtualenv`
 
 * [OPTIONAL] Create a new virtual environment if not present.
 
