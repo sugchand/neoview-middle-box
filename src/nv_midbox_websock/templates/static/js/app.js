@@ -24,6 +24,7 @@ angular.module('landingApp', [])
       cameraInfo.status = status;
       ws.send(JSON.stringify([cameraInfo]));
       $scope.cameraInfo[index].disabled = true;
+      $scope.cameraInfo[index].status = status == 1 ? 2 : 1;
     }
   };
 

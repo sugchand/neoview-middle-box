@@ -26,7 +26,6 @@
         margin: 25px 0;
       }
     </style>
-
   </head>
 
   <body ng-app="landingApp">
@@ -47,7 +46,7 @@
             </div>
             <div class="col-md-6 col-xs-6">
               <label class="switch">
-                <input type="checkbox" ng-model="chkboxVal" ng-true-value="2" ng-false-value="1" ng-checked="camera.status === 2" ng-change="changeChk($index, chkboxVal, ((camera.status !== 1 && camera.status !== 2) || camera.disabled))">
+                <input type="checkbox" ng-model="camera.status" ng-true-value="2" ng-false-value="1" ng-change="changeChk($index, camera.status, ((camera.status !== 1 && camera.status !== 2) || camera.disabled))">
                 <div class="slider round" ng-class="{ 'disChkbox' : (camera.status !== 1 && camera.status !== 2) || camera.disabled }"></div>
               </label>
             </div>
