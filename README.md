@@ -98,7 +98,7 @@ middlebox is running in virtual environment.
 
 * Start the middlebox software by
 
-  `python3 src/nv_middlebox.py`
+  `./src/nv_middlebox.py`
 
 * Configure webserver and camera details using CLI options.
 
