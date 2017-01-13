@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
+    <meta http-equiv='cache-control' content='no-cache'>
+    <meta http-equiv='expires' content='0'>
+    <meta http-equiv='pragma' content='no-cache'>
     <link type="text/css" rel="stylesheet" href="static/css/bootstrap.css"/>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" />
     <link rel="stylesheet" type="text/css" href="static/css/main.css" />
@@ -26,7 +29,6 @@
         margin: 25px 0;
       }
     </style>
-
   </head>
 
   <body ng-app="landingApp">
@@ -47,7 +49,7 @@
             </div>
             <div class="col-md-6 col-xs-6">
               <label class="switch">
-                <input type="checkbox" ng-model="chkboxVal" ng-true-value="2" ng-false-value="1" ng-checked="camera.status === 2" ng-change="changeChk($index, chkboxVal, ((camera.status !== 1 && camera.status !== 2) || camera.disabled))">
+                <input type="checkbox" ng-model="camera.status" ng-true-value="2" ng-false-value="1" ng-change="changeChk($index, camera.status, ((camera.status !== 1 && camera.status !== 2) || camera.disabled))">
                 <div class="slider round" ng-class="{ 'disChkbox' : (camera.status !== 1 && camera.status !== 2) || camera.disabled }"></div>
               </label>
             </div>
@@ -65,7 +67,7 @@
     <script src="static/js/js_lib/angular.js"></script>
     <script src="static/js/js_lib/bootstrap.js"></script>
     <script src="static/js/js_lib/underscore.js"></script>
-    <script src="static/js/app.js?r=<%= session.getId()%>"></script>
+    <script src="static/js/app.js"></script>
     <!-- /.container -->
   </body>
 
