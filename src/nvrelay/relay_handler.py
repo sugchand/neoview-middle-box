@@ -142,10 +142,19 @@ class relay_ftp_handler():
                 return
             if not self.websrv:
                 self.websrv = websrv
-                self.sftp = self.os_context.get_remote_sftp_connection(
+                try:
+                    self.sftp = self.os_context.get_remote_sftp_connection(
                                                 hostname = websrv.name,
                                                 username = websrv.uname,
                                                 pwd = websrv.pwd)
+                except Exception as e:
+                    self.nv_log_handler.error("Failed to establish remote ssh "
+                                "connection to webserver, copying failed %s", e)
+                    self.sftp = None
+                    return
+            if not self.sftp:
+                self.nv_log_handler.error("SFTP failed, cannot copy media.")
+                return
             dst_path = websrv.video_path
             # Get the absolute path directory name of the file.
             cam_src_dir = self.os_context.get_dirname(nv_cam_src)
