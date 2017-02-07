@@ -145,23 +145,27 @@ class nv_middlebox_cli(threading.Thread):
             raise midboxExitException
 
     def nv_midbox_add_camera(self):
-        # TODO :: Validate user inputs for right input data,
-        #cam_name = (input("Enter Camera Name: "))
-        #cam_ip = (input("Enter Camera IP Address: "))
-        #cam_mac = (input("Enter Camera MAC Address: "))
-        #cam_listen_port = (input("Enter Camera Listen port: "))
-        #cam_uname = (input("Enter Camera User name: "))
-        #cam_pwd = (input("Enter Camera password: "))
-        ### TODO ::: STATIV values , remove it #####
-        cam_name = 'camera-1'
-        cam_ip = int(ipaddress.IPv4Address('192.168.1.7'))
-        cam_mac = "00:00:00:00:00:01"
-        cam_listen_port = 554
-        time_len = 60
-        cam_uname = 'admin'
-        cam_pwd = 'sugu&deepu'
-        desc = "Camera 1 at test"
-        #########################
+        cam_name = input("Camera Name : ")
+        cam_ip = int(ipaddress.IPv4Address(input("IP Address : ")))
+        cam_mac = input("MAC Address : ")
+        cam_listen_port = input("RTSP port(default : 554) : ")
+        if not cam_listen_port:
+            cam_listen_port = 554
+        else:
+            cam_listen_port = int(cam_listen_port)
+        cam_uname = input("User name(default : root) : ")
+        if not cam_uname:
+            cam_uname = 'root'
+        cam_pwd = getpass(prompt = "Password(default : root) : ")
+        if not cam_pwd:
+            cam_pwd = 'root'
+        time_len = input("video slice duration in sec(default : 60) : ")
+        if not time_len:
+            time_len = 60 # Default is 60 seconds.
+        else:
+            time_len = int(time_len)
+        desc = input("Description : ")
+
         cam_data = camera_data(op = enum_ipcOpCode.CONST_ADD_CAMERA_OP,
                                name = cam_name,
                                status = enum_camStatus.CONST_CAMERA_NEW,
