@@ -30,17 +30,19 @@
       }
     </style>
   </head>
-
   <body ng-app="landingApp">
     <!-- Page Content -->
     <div class="container" ng-controller="landingController">
       <div class="row">
         <div class="col-lg-12">
           <h1 class="page-header">Neoview Dashboard</h1>
+          <div style="float:right;" ng-if="allCamera">
+            <button class="btn btn-primary" ng-click="btnAllCamera()">All Cameras</button>
+          </div>  
         </div>
         <div class="col-lg-3 col-md-4 col-xs-6 thumb" ng-if="cameraInfo && cameraInfo.length > 0" ng-repeat="camera in cameraInfo track by $index">
           <div class="col-xs-12">
-            <h3>{{!camera.name}} </h3>
+            <h3><input ng-if="!allCamera" type="checkbox" ng-click="cameraClick(camera)" /> {{!camera.name}} </h3>
             <i class="fa fa-5x fa-camera" style="padding-left:33%;"></i>
           </div>
           <div class="cam-desc col-xs-12">
