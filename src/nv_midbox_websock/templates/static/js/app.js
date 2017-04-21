@@ -1,6 +1,6 @@
 'use strict'
 angular.module('landingApp', [])
-.controller('landingController', ['$scope', '$window', '$timeout', function($scope, $window, $timeout) {
+.controller('landingController', ['$scope', '$window', function($scope, $window) {
   var host = "ws://" + $window.location.host + "/userwebsocket",
   cameraStatus = [],
   ws = new WebSocket(host);
@@ -13,7 +13,7 @@ angular.module('landingApp', [])
   $scope.btnAllCamera = function() {
     $scope.allCamera = false;
     $window.localStorage.removeItem("camera")
-    init();
+    $window.location.reload()
   }
 
   function init() {
