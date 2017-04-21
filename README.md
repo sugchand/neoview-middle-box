@@ -75,6 +75,12 @@ installation can be done as below on a Ubuntu(Debian) machine.
 
   `apt-get install vlc-nox`
 
+* Install dependency packages for the middlebox as below
+
+  `apt-get install python-pip python3-pip python-dev python3-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev libjpeg8-dev zlib1g-dev`
+
+  `pip3 install cryptography`
+
 * [OPTIONAL] Install the virtual environment if not present. This step is needed only when
 middlebox is running in virtual environment.
 
@@ -98,7 +104,7 @@ middlebox is running in virtual environment.
 
 * Start the middlebox software by
 
-  `python3 src/nv_middlebox.py`
+  `./src/nv_middlebox.py`
 
 * Configure webserver and camera details using CLI options.
 

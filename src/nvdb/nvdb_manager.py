@@ -186,8 +186,14 @@ class db_manager():
         self.db_session.add(record_obj)
 
     def db_commit(self):
-        self.nv_log_handler.debug("Committing the changes to DB.")
-        self.db_session.commit()
+        try:
+            self.nv_log_handler.debug("Committing the changes to DB.")
+            self.db_session.commit()
+        except Exception as e:
+           self.nv_log_handler.error(" exception occured on db commit,"
+                                     "rolling back the changes \n \"%s\"" % e)
+           self.db_session.rollback()
+           raise e
 
     def delete_record(self, record_obj):
         self. nv_log_handler.debug("Delete a record from table")
