@@ -28,7 +28,7 @@ angular.module('landingApp', [])
     if(disableFlg) {
       $scope.cameraInfo[index].disabled = true;
       $scope.cameraInfo[index].status = new_status == 1 ? 2 : 1;
-      alert("Camera is busy, Please wait....");
+      alertWithoutNotice("Camera is busy.  Please wait momentarily.");
     } else {
       cameraStatus[index] = new_status;
       var cameraInfo = $scope.cameraInfo[index];
@@ -48,5 +48,11 @@ angular.module('landingApp', [])
     }
     return true;
   };
+
+  function alertWithoutNotice(message){
+    setTimeout(function(){
+        alert(message);
+    }, 1000);
+  }
 
 }]);
