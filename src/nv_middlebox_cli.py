@@ -105,12 +105,16 @@ class nv_middlebox_cli(threading.Thread):
         srv_name = input("Enter webserver Name(dafult = localhost) : ")
         uname = 'root'
         pwd = 'root'
-        if not srv_name:
+        if not srv_name or srv_name is 'localhost' or srv_name is '127.0.0.1':
             srv_name = 'localhost'
         else:
             # The username and password needed only when webserver is remote.
             uname = input("User Name(default = root) : ")
+            if not uname:
+                uname = 'root'
             pwd = getpass(prompt = "Password(default = root) : ")
+            if not pwd:
+                pwd = 'root'
         srv_path = input("Enter webserver video path(default = /tmp): ")
         if not srv_path:
             srv_path = '/tmp/'
@@ -145,9 +149,19 @@ class nv_middlebox_cli(threading.Thread):
             raise midboxExitException
 
     def nv_midbox_add_camera(self):
-        cam_name = input("Camera Name : ")
-        cam_ip = int(ipaddress.IPv4Address(input("IP Address : ")))
-        cam_mac = input("MAC Address : ")
+        cam_name = input("Camera Name(default : bed-cam) : ")
+        if not cam_name:
+            cam_name = 'bed-cam'
+        try:
+            #ipaddress will throw exception if the input ip is invalid.
+            cam_ip = int(ipaddress.IPv4Address(input("IP Address : ")))
+        except:
+            self.nv_log_handler.error("Invalid ip address, cannot add camera,"
+                                      " try again with proper ip address")
+            return
+        cam_mac = input("MAC Address(default : FF:FF:FF:FF:FF:FF) : ")
+        if not cam_mac:
+            cam_mac = "FF:FF:FF:FF:FF:FF"
         cam_listen_port = input("RTSP port(default : 554) : ")
         if not cam_listen_port:
             cam_listen_port = 554
@@ -175,7 +189,7 @@ class nv_middlebox_cli(threading.Thread):
                                time_len = time_len,
                                uname = cam_uname,
                                pwd = cam_pwd,
-                               desc = desc 
+                               desc = desc
                                )
         try:
             GBL_CONF_QUEUE.enqueue_data(obj_len = 1, obj_value = [cam_data])
