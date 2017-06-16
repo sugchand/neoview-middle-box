@@ -53,6 +53,15 @@ class nv_midbox_conf():
             return
         cam_records = db_mgr_obj.get_tbl_records(nv_camera)
         for camera in cam_records:
+            valid_camera_status = self._is_nv_midbox_cam_status_update_valid(
+                                        camera.status, status)
+            if not valid_camera_status:
+                self.nv_log_handler.error("Cannot change state %s to %s for"
+                                          "camera %s",
+                                          enum_camStatus.CAM_STATUS_STR[camera.status],
+                                          enum_camStatus.CAM_STATUS_STR[status],
+                                          camera.name)
+                continue
             camera.status = status
         db_mgr_obj.db_commit()
         GBL_WSCLIENT.send_notify()
@@ -173,8 +182,8 @@ class nv_midbox_conf():
             return
         if cam_status is not enum_camStatus.CONST_CAMERA_NEW:
             self.nv_log_handler.error("Camera is not in valid state to add"
-                                      "Current state is %d",
-                                      cam_status)
+                                      "Current state is %s",
+                                      enum_camStatus.CAM_STATUS_STR[cam_status])
             return
         # Change the camera status while adding it to the DB.
         try:
@@ -228,8 +237,8 @@ class nv_midbox_conf():
         cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera, filter_arg)
         if cam_record.status is not enum_camStatus.CONST_CAMERA_READY:
             self.nv_log_handler.error("Cannot start the streaming until the"
-                                      " camera is ready, current state is %d",
-                                      cam_record.status)
+                                      " camera is ready, current state is %s",
+                                      enum_camStatus.CAM_STATUS_STR[cam_record.status])
             GBL_WSCLIENT.send_notify()
             return
         self.cam_thread_mgr.start_camera_thread(cam_record)
@@ -247,9 +256,10 @@ class nv_midbox_conf():
             self.nv_log_handler.error("No camera record found for %s", cam_name)
             return
         if cam_record.status is not enum_camStatus.CONST_CAMERA_RECORDING:
-            self.nv_log_handler.error("Cannot stop the streaming until the"
-                                     " camera is ready, current state is %d",
-                                     cam_record.status)
+            self.nv_log_handler.error("Cannot stop the streaming as the"
+                                     " camera is not recording,"
+                                     " current state is %s",
+                                     enum_camStatus.CAM_STATUS_STR[cam_record.status])
             GBL_WSCLIENT.send_notify()
             return
         cam_record.status = enum_camStatus.CONST_CAMERA_DEFERRED
@@ -257,6 +267,57 @@ class nv_midbox_conf():
         db_mgr_obj.db_commit()
         self.nv_log_handler.debug("Stop streaming on camera %s" %cam_name)
         GBL_WSCLIENT.send_notify()
+
+    def _is_nv_midbox_cam_status_update_valid(self, old_state, new_state):
+        '''
+        It is necessary to validate the camera status before updating the status
+        blindly.
+        The possible status updates are given below. The 'status_upadte_mtx'
+        holds the same information. Any update on enum_camStatus should update
+        this function as well.
+
+        CAMERA_READY --> CAMERA_DEFERRED
+        CAMERA_READY --> CAMERA_DISCONNECTED
+
+        CAMERA_RECORDING --> CAMERA_DEFERED
+        CAMERA_RECORDING -->CAMERA_DISCONNECTED
+
+        CAMERA_DEFERRED --> CAMERA_READY
+        CAMERA_DEFERRED --> CAMERA_RECORDING
+        CAMERA_DISCONNECTED --> none
+
+        CAMERA_NEW --> none
+        '''
+        status_upadte_mtx = {
+            enum_camStatus.CONST_CAMERA_NEW :
+                [enum_camStatus.CONST_CAMERA_DISCONNECTED],
+            enum_camStatus.CONST_CAMERA_READY :
+                [enum_camStatus.CONST_CAMERA_DEFERRED,
+                 enum_camStatus.CONST_CAMERA_DISCONNECTED],
+            enum_camStatus.CONST_CAMERA_RECORDING :
+                [enum_camStatus.CONST_CAMERA_DEFERRED,
+                 enum_camStatus.CONST_CAMERA_DISCONNECTED],
+            enum_camStatus.CONST_CAMERA_DISCONNECTED : [],
+            enum_camStatus.CONST_CAMERA_DEFERRED :
+                [enum_camStatus.CONST_CAMERA_DISCONNECTED,
+                 enum_camStatus.CONST_CAMERA_READY,
+                 enum_camStatus.CONST_CAMERA_RECORDING]
+        }
+        if not old_state in status_upadte_mtx:
+            self.nv_log_handler.error("Camera is in unexpected state %d",
+                                      old_state)
+            return False
+        if not new_state in status_upadte_mtx:
+            self.nv_log_handler.error("Camera cannot set to an unexpected state"
+                                      "%d", new_state)
+            return False
+        valid_states = status_upadte_mtx[old_state]
+        if new_state not in valid_states:
+            self.nv_log_handler.error("Camera cannot move from state %s to %s",
+                                      enum_camStatus.CAM_STATUS_STR[old_state],
+                                      enum_camStatus.CAM_STATUS_STR[new_state])
+            return False
+        return True
 
     def nv_midbox_cam_status_update(self, cam_obj):
         '''
@@ -271,11 +332,15 @@ class nv_midbox_conf():
             self.nv_log_handler.error("No camera record found to change status %s",
                                       cam_name)
             return
+        valid_state_change = self._is_nv_midbox_cam_status_update_valid(
+                                    cam_record.status, cam_obj.status)
+        if not valid_state_change:
+            return
         cam_record.status = cam_obj.status
         db_mgr_obj.db_commit()
         GBL_WSCLIENT.send_notify()
-        self.nv_log_handler.debug("%s camera has new status %d", cam_name,
-                                  cam_obj.status)
+        self.nv_log_handler.debug("%s camera has new status %s", cam_name,
+                                  enum_camStatus.CAM_STATUS_STR[cam_obj.status])
 
     def nv_midbox_stop(self, obj):
         try:

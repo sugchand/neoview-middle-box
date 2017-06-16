@@ -50,11 +50,29 @@ class nv_webserver_system(db_base):
                 (self.sys_id, self.name, self.video_path, self.uname)
 
 class enum_camStatus():
+    '''
+    enum class to keep track of different states of camera. Updating the class
+    should update the status update functions in midbox_conf and the
+    validation function '_is_nv_midbox_cam_status_update_valid'
+    '''
     CONST_CAMERA_NEW = 0 # OFF state/Invalid state.
     CONST_CAMERA_READY = 1 # ON state, not recording.
     CONST_CAMERA_RECORDING = 2 # ON and recording.
     # Camera/thread is busy, cannot do any operation now.
     CONST_CAMERA_DEFERRED = 3
+    # Camera is disconnected state.
+    # If size of streams that are generated less than MINSIZE for
+    # NV_CAM_CONN_TIMEOUT period, will move the camera to
+    # disconnected state.
+    CONST_CAMERA_DISCONNECTED = 4
+
+    CAM_STATUS_STR = {
+                      CONST_CAMERA_NEW : "INVALID",
+                      CONST_CAMERA_READY : "READY",
+                      CONST_CAMERA_RECORDING : "RECORDING",
+                      CONST_CAMERA_DEFERRED : "BUSY",
+                      CONST_CAMERA_DISCONNECTED : "DISCONNECTED"
+                      }
 
 class nv_camera(db_base):
     '''
