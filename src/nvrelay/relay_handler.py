@@ -21,7 +21,12 @@ from src.nv_logger import nv_logger
 from src.nv_lib.nv_os_lib import nv_os_lib
 from src.nv_lib.nv_sync_lib import GBL_NV_SYNC_OBJ
 from src.settings import NV_CAM_VALID_FILE_SIZE
+from src.nv_lib.nv_time_lib import nv_time
+from src.settings import NV_CAM_CONN_TIMEOUT
 import queue
+from src.nv_lib.ipc_data_obj import camera_data, enum_ipcOpCode
+from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
+from src.nvdb.nvdb_manager import enum_camStatus
 
 class relay_queue_mgr():
     '''
@@ -32,9 +37,17 @@ class relay_queue_mgr():
         Dictionary to hold the different queues. the dictionary will be looks
         like
         cam_stream_queue_dic = {
-                            'camera1' : queue1,
-                            'camera2' : queue2
+                            'camera1' : [queue1, camera_timer_obj]
+                            'camera2' : [queue2, camera_timer_obj]
+                             .....
                              }
+        the queues are holding the series of file-pairs. for eg:
+        queue1 = <[src1, dst1], [src2. dst2], ....>
+
+        camera_timer_obj is used to determine the liveness of camera. If a
+        camera generates invalid streams(less than valid size) continuously
+        for a period(NV_CAM_CONN_TIMEOUT), then the camera will move to
+        disconnected state.
         '''
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.cam_stream_queue_dic = {}
@@ -43,9 +56,10 @@ class relay_queue_mgr():
         if not cam_name in self.cam_stream_queue_dic:
             # There is no queue for specific camera, create it.
             rel_queue = queue.Queue()
-            self.cam_stream_queue_dic[cam_name] = rel_queue
+            cam_timeobj = nv_time(timeout=NV_CAM_CONN_TIMEOUT)
+            self.cam_stream_queue_dic[cam_name] = [rel_queue, cam_timeobj]
         else:
-            rel_queue = self.cam_stream_queue_dic[cam_name]
+            [rel_queue,cam_timeobj] = self.cam_stream_queue_dic[cam_name]
         rel_queue.put([src, dst])
 
     def dequeue_file_pair(self, cam_name):
@@ -53,11 +67,24 @@ class relay_queue_mgr():
             self.nv_log_handler.debug("Cannot dequeue from a non-existent queue"
                                       ": %s" % cam_name)
             return [None, None]
-        rel_queue = self.cam_stream_queue_dic[cam_name]
+        [rel_queue,_] = self.cam_stream_queue_dic[cam_name]
         if rel_queue.empty():
             self.nv_log_handler.debug("Cannot dequeue from a empty queue")
             return [None, None]
         return rel_queue.get()
+
+    def dequeue_file_pair_with_timeout(self, cam_name):
+        '''
+        Function to return the file pair to copy from queue along with the
+        timeobj. The timeobj stores the last time a proper video stream is
+        generated.
+        @returns [[file-src, file-dst], timeobj]
+        '''
+        file_list = self.dequeue_file_pair(cam_name)
+        if all(x is None for x in file_list):
+            return[file_list, None]
+        [_, timeobj] = self.cam_stream_queue_dic[cam_name]
+        return[file_list, timeobj]
 
 class relay_ftp_handler():
     '''
@@ -70,7 +97,45 @@ class relay_ftp_handler():
         self.sftp = None
         self.queue_mgr = relay_queue_mgr()
 
-    def is_file_to_copy_valid(self, file_path):
+    def notify_camera_disconnect(self, cam_name):
+        '''
+        Function to move the camera to disconnected state.
+        '''
+        # Stop the camera stream first, before making it to disconnected.
+        cam_ipcStopData = camera_data(op = enum_ipcOpCode.CONST_STOP_CAMERA_STREAM_OP,
+                                  name = cam_name,
+                                  status = None,
+                                  # Everything else is None.
+                                  ip = None,
+                                  macAddr = None,
+                                  port = None,
+                                  time_len = None,
+                                  uname = None,
+                                  pwd =  None,
+                                  desc = None
+                                  )
+        cam_ipcData = camera_data(op = enum_ipcOpCode.CONST_UPDATE_CAMERA_STATUS,
+                                  name = cam_name,
+                                  status = enum_camStatus.CONST_CAMERA_DISCONNECTED,
+                                  # Everything else is None.
+                                  ip = None,
+                                  macAddr = None,
+                                  port = None,
+                                  time_len = None,
+                                  uname = None,
+                                  pwd =  None,
+                                  desc = None
+                                  )
+        try:
+            GBL_CONF_QUEUE.enqueue_data(obj_len = 1,
+                                        obj_value = [cam_ipcStopData])
+            GBL_CONF_QUEUE.enqueue_data(obj_len = 1, obj_value = [cam_ipcData])
+            self.nv_log_handler.info("Camera %s is disconnected", cam_name)
+        except Exception as e:
+            self.nv_log_handler.error("Failed to change the camera status"
+                                      "to disconnected state :, %s", e)
+
+    def is_file_to_copy_valid(self, file_path, cam_name, timeobj):
         '''
         Function to validate if the file_path is a corrupted file or not.
         For now we assume if the file size is greater than 10MB its good to go,
@@ -78,7 +143,14 @@ class relay_ftp_handler():
         '''
         file_size = self.os_context.get_filesize_in_bytes(file_path)
         if file_size < NV_CAM_VALID_FILE_SIZE:
+            # Validate when the last valid file is generated by the camera
+            # If its not in the timeout period, notify to move the camera to
+            # a disconnected state.
+            if timeobj.is_time_elpased():
+                self.notify_camera_disconnect(cam_name)
             return False
+        # Update the time value if the filesize is valid.
+        timeobj.update_time()
         return True
 
     def enqeue_copy_file_list(self, cam_name, src, dst):
@@ -93,12 +165,14 @@ class relay_ftp_handler():
         creation is complete. On creation files are enqueued and real copying is
         happen only at the time of second file creation.
         '''
-        [cp_src, cp_dst] = self.queue_mgr.dequeue_file_pair(cam_name)
+        [file_list, time_obj] = \
+                        self.queue_mgr.dequeue_file_pair_with_timeout(cam_name)
+        [cp_src, cp_dst] = file_list
         self.queue_mgr.enqueue_file_pair(cam_name, src, dst)
         if cp_src is None or cp_dst is None:
             return [None, None]
-        if not self.is_file_to_copy_valid(cp_src):
-            self.nv_log_handler.debug("%s file size less than %d,"
+        if not self.is_file_to_copy_valid(cp_src, cam_name, time_obj):
+            self.nv_log_handler.info("%s file size less than %d,"
                                       "Not copying to webserver",
                                       cp_src, NV_CAM_VALID_FILE_SIZE)
             return [None, None]
@@ -108,7 +182,7 @@ class relay_ftp_handler():
         try:
             # Copy the file nv_cam_src to dst.
             if not self.is_media_file(nv_cam_src):
-                self.nv_log_handler.debug("%s is not a media file, Do not copy" % \
+                self.nv_log_handler.error("%s is not a media file, Do not copy" % \
                                           nv_cam_src)
                 return
             if not self.websrv:
@@ -268,7 +342,7 @@ class relay_watcher(FileSystemEventHandler):
             # Check if the webserver local, copy the file to a specified location
             self.websrv = db_mgr_obj.get_webserver_record()
             if not self.websrv:
-                self.nv_log_handler.debug("Webserver is not configured")
+                self.nv_log_handler.error("Webserver is not configured")
                 return
             is_local_wbs = self.ftp_obj.is_webserver_local(self.websrv)
             if is_local_wbs:
