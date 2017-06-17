@@ -56,8 +56,8 @@ class nv_midbox_conf():
             valid_camera_status = self._is_nv_midbox_cam_status_update_valid(
                                         camera.status, status)
             if not valid_camera_status:
-                self.nv_log_handler.error("Cannot change state %s to %s for"
-                                          "camera %s",
+                self.nv_log_handler.error("Cannot change state %s to %s for "
+                                          "camera: %s",
                                           enum_camStatus.CAM_STATUS_STR[camera.status],
                                           enum_camStatus.CAM_STATUS_STR[status],
                                           camera.name)
