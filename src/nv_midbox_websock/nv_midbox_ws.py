@@ -25,6 +25,9 @@ import json
 from src.nv_lib.ipc_data_obj import camera_data,enum_ipcOpCode
 from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
 from src.nvdb.nvdb_manager import enum_camStatus
+from src.nv_lib.nv_os_lib import nv_os_lib
+import ssl
+import os
 
 class websock_connectionPool():
     '''
@@ -245,11 +248,26 @@ class nv_midbox_ws(threading.Thread):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         threading.Thread.__init__(self, None, None, "nv_midbox_ws")
         self.daemon = True
+        self.os_context = nv_os_lib()
 
     def run(self):
         try:
             ws_app = Application()
-            server = tornado.httpserver.HTTPServer(ws_app)
+            cert_file = os.getcwd() + "/ssl_data/nvmidbox.cert"
+            key_file = os.getcwd() + "/ssl_data/nvmidbox.key"
+
+            if self.os_context.is_path_exists(cert_file) and \
+                self.os_context.is_path_exists(key_file):
+                self.nv_log_handler.info("Starting midbox HTTPS server..")
+                ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+                ssl_ctx.load_cert_chain(cert_file, key_file)
+                server = tornado.httpserver.HTTPServer(ws_app,
+                                                       ssl_options=ssl_ctx)
+            else:
+                # ssl data is missing, so start webserver in http mode.
+                self.nv_log_handler.info("Starting midbox HTTP server..")
+                server = tornado.httpserver.HTTPServer(ws_app)
+
             server.listen(8080)
             tornado.ioloop.IOLoop.instance().start()
         except:

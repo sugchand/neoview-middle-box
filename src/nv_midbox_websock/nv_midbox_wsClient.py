@@ -10,6 +10,7 @@ __version__ = "1.0"
 from websocket import create_connection
 import uuid
 import json
+import ssl
 from src.nv_logger import nv_logger
 
 class ws_token():
@@ -41,7 +42,7 @@ class midbox_wsClient():
     Class to send websocket messages to the webserver. The middlebox uses
     this class to update webserver about the system changes
     '''
-    ws_path = 'ws://localhost:8080/userwebsocket'
+    ws_path = 'wss://localhost:8080/userwebsocket'
     def __init__(self):
         self.ws_key = ws_token()
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
@@ -63,7 +64,9 @@ class midbox_wsClient():
         Function to send a notification to ws server on a data change.
         '''
         try:
-            self.ws_client = create_connection(self.ws_path)
+            # Local connection to same server, No need to verify SSL cert.
+            self.ws_client = create_connection(self.ws_path,
+                                            sslopt={"cert_reqs": ssl.CERT_NONE})
         except:
             self.nv_log_handler.error("Failed to make ws connection..")
             return
