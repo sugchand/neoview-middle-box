@@ -54,11 +54,18 @@
             <div class="col-md-6 col-xs-6">
               <h4>Camera Status </h4>
             </div>
-            <div class="col-md-6 col-xs-6">
+            <div class="col-md-6 col-xs-6" ng-if="camera.status != 4">
               <label class="switch">
                 <input type="checkbox" ng-model="camera.status" ng-true-value="2" ng-false-value="1" ng-change="changeChk($index, camera.status, ((camera.status !== 1 && camera.status !== 2) || camera.disabled))">
                 <div class="slider round" ng-class="{ 'disChkbox' : (camera.status !== 1 && camera.status !== 2) || camera.disabled }"></div>
               </label>
+            </div>
+            <div class="col-md-6 col-xs-6 " ng-if="camera.status == 4">
+              <div class="tooltip1">
+                <img src="static/no-camera.jpg" style="width:31%" />
+                <span class="tooltiptext">Camera is disconnected, Please reconfigure it
+                </span>
+              </div>
             </div>
             <div class="col-md-6 col-xs-6">
               <h4>Description </h4>
