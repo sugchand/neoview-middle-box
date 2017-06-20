@@ -114,6 +114,7 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
                    "name" : camera.name,
                    "status" : camera.status,
                    "description" : camera.desc,
+                   "liveUrl" : camera.live_url,
                    "token" : None # A unique token to idenfity source of ws
                    }
         return cam_dic
@@ -193,8 +194,8 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
             # Notification to the server about the system update.
             self.send_all_camera_to_all_ws()
             return
-        elif len(data) != 4:
-            default_nv_log_handler.error("Cannot Parse json in ws, length"\
+        elif len(data) != 5:
+            default_nv_log_handler.error("Cannot Parse json in ws, length "\
                                         "is invalid in %s.", data)
             return
         # Request from the client to change the state of camera.

@@ -78,6 +78,7 @@ web UI request to turn camera ON,
         "name" : "camera1",
         "status" : 2,
         "description" : "Camera in ICU",
+        "liveUrl" : None
         "token" : None
     }
 ```
@@ -106,12 +107,14 @@ A sample webserver camera status update json is given below.
     "name" : "camera1",
     "status" : 2,
     "description" : "Camera in ICU",
+    "liveUrl" : None
     "token" : None
 }
 {
     "name" : "camera2",
     "status" : 1,
     "description" : "Camera in LAB",
+    "liveUrl" : None
     "token" : None
 }
 ```
