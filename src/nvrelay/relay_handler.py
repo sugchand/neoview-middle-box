@@ -104,6 +104,28 @@ class relay_ftp_handler():
         '''
         Function to move the camera to disconnected state.
         '''
+        # Stop the livestreaming thread if its running.
+        cam_live = camera_data(op = enum_ipcOpCode.CONST_STOP_CAMERA_LIVESTREAM,
+                                  name = cam_name,
+                                  status = None,
+                                  # Everything else is None.
+                                  ip = None,
+                                  macAddr = None,
+                                  port = None,
+                                  time_len = None,
+                                  uname = None,
+                                  pwd =  None,
+                                  desc = None
+                                  )
+        try:
+            GBL_CONF_QUEUE.enqueue_data(obj_len = 1,
+                                        obj_value = [cam_live])
+            self.nv_log_handler.info("Live streaming on camera %s is stopped",
+                                     cam_name)
+        except Exception as e:
+            self.nv_log_handler.error("Failed to stop live streaming in %s"
+                                      ", exception : %s", e)
+
         # Stop the camera stream first, before making it to disconnected.
         cam_ipcStopData = camera_data(op = enum_ipcOpCode.CONST_STOP_CAMERA_STREAM_OP,
                                   name = cam_name,
