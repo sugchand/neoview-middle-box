@@ -88,6 +88,7 @@ class nv_camera(db_base):
     listen_port = Column(Integer, nullable = False)
     username = Column(String, nullable = False)
     password = Column(String, nullable = False)
+    live_url = Column(String, default=None, nullable = True)
     src_protocol = Column(Integer, default = 554)
     # Number of streaming files
     stream_file_cnt = Column(Integer, default = 0)
@@ -106,12 +107,12 @@ class nv_camera(db_base):
                 listen_port=%d, username=%s, password=%s, src_protocol=%d, \
                 stream_file_cnt=%d, stream_file_time_sec=%d, \
                 active_conn=%d, nv_midbox_id=%d), status = %d, \
-                desc = %s >" % (self.cam_id, self.name, \
+                desc = %s live_url = %s>" % (self.cam_id, self.name, \
                 self.ip_addr, self.mac_addr, self.listen_port, \
                 self.username, self.password, self.src_protocol, \
                 self.stream_file_cnt, self.stream_file_time_sec, \
                 self.active_conn, self.nv_midbox_id, \
-                self.status, self.desc)
+                self.status, self.desc, self.live_url)
 
 
 class db_manager():
