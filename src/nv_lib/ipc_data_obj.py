@@ -31,7 +31,9 @@ class enum_ipcOpCode():
     CONST_START_CAMERA_STREAM_OP = 6
     CONST_STOP_CAMERA_STREAM_OP = 7
     CONST_UPDATE_CAMERA_STATUS = 8
-    CONST_IPC_OP_MAX_LIMIT = 10
+    CONST_START_CAMERA_LIVESTREAM = 9
+    CONST_STOP_CAMERA_LIVESTREAM = 10
+    CONST_IPC_OP_MAX_LIMIT = 100
 
 class ipc_data():
     '''
@@ -65,7 +67,7 @@ class camera_data(ipc_data):
     Class to hold the camera details.
     ''' 
     def __init__(self, op, name, status, ip, macAddr, port, time_len, uname,
-                 pwd, desc = None):
+                 pwd, desc = None, live_url = None):
         super(camera_data, self).__init__(ipc_type =
                                           enum_ipcType.CONST_CAMERA_OBJ,
                                           ipc_op = op)
@@ -78,6 +80,7 @@ class camera_data(ipc_data):
         self.time_len = time_len
         self.uname = uname
         self.pwd = pwd
+        self.live_url = live_url
 
 class webserver_data(ipc_data):
     '''
