@@ -8,10 +8,8 @@ __license__ = "GNU Lesser General Public License"
 __version__ = "1.0"
 
 from src.nv_logger import nv_logger
-from src.nvdb.nvdb_manager import nv_camera
 from src.nv_lib.nv_os_lib import nv_os_lib
 import time
-from time import sleep
 import ipaddress
 from src.settings import NV_MID_BOX_CAM_STREAM_DIR
 from threading import Thread
@@ -100,19 +98,6 @@ class cam_handler():
                                       "stopping the streaming, %s", e)
         self.nv_log_handler.debug("Exiting the camera thread for %s" \
                                   % self.cam_id)
-
-    def add_camera(self, cam_entry):
-        '''
-        Add camera entry to a database. the cam_entry should be populated with
-        all the camara specific arguments.
-        '''
-        pass
-
-    def del_camera(self):
-        '''
-        Delete a camera with id specified by cam_id from the DB
-        '''
-        pass
 
     def start_camera_thread(self):
         '''
