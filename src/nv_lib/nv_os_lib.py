@@ -105,7 +105,7 @@ class nv_linux_lib():
             self.nv_log_handler.error("Failed to run the bash command, " + e)
             raise e
         else:
-            result, err = out.communicate()
+            _, err = out.communicate()
             return err
 
     def is_path_exists(self, path):
