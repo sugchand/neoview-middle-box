@@ -9,13 +9,9 @@ __version__ = "1.0"
 
 import threading
 import tornado.web
-from tornado.web import asynchronous
-from tornado import gen
-from tornado.ioloop import IOLoop
 import tornado.websocket
 import tornado.httpserver
 import tornado.ioloop
-from time import sleep, time
 from src.nv_logger import nv_logger
 from src.nvdb.nvdb_manager import db_mgr_obj, nv_camera
 from src.nv_logger import default_nv_log_handler
