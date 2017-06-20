@@ -112,3 +112,12 @@ class thread_manager():
         except:
             self.nv_log_handler.error("Failed to join the camera threads.")
 
+    def start_cam_live(self, cam_tbl_entry):
+        self.nv_log_handler.debug("starting the live on %s", cam_tbl_entry.name)
+        return None
+
+    def stop_cam_live(self, cam_tbl_entry):
+        self.nv_log_handler.debug("stopping camera live at %s", cam_tbl_entry.name)
+
+    def stop_all_camlive(self):
+        self.nv_log_handler.debug("stopping all the camera live streams")
