@@ -75,6 +75,8 @@ installation can be done as below on a Ubuntu(Debian) machine.
 
   `apt-get install vlc-nox`
 
+  `apt-get install ffmpeg`
+
 * Install dependency packages for the middlebox as below
 
   `apt-get install python-pip python3-pip python-dev python3-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev libjpeg8-dev zlib1g-dev`
