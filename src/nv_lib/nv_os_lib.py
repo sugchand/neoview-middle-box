@@ -14,7 +14,7 @@ import subprocess
 import os
 import shutil
 import paramiko
-
+from signal import SIGTERM
 class nv_linux_lib():
     '''
     Library class for the linux operating system.
@@ -102,11 +102,50 @@ class nv_linux_lib():
             out = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         except Exception as e:
-            self.nv_log_handler.error("Failed to run the bash command, " + e)
+            self.nv_log_handler.error("Failed to run the bash command, %s" + e)
             raise e
         else:
             _, err = out.communicate()
             return err
+
+    def execute_cmd_bg(self, cmd, args):
+        '''
+        Execute a command in background. To handle the process externally, the
+        process group is assigned a session id. The proocess id can be used to
+        kill the process later. Or send signals to the process groups.
+        @return: proc_obj : process Obj of process group leader/session.
+        '''
+        exec_cmd = []
+        exec_cmd.append(cmd)
+
+        if(len(args)):
+            exec_cmd = exec_cmd + list(args)
+
+        self.nv_log_handler.debug("Executing cmd in bg: %s" %exec_cmd)
+        try:
+            proc = subprocess.Popen(exec_cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    preexec_fn=os.setsid)
+            return proc
+        except Exception as e:
+            self.nv_log_handler.error("Failed to run bash command %s", e)
+            raise e
+
+    def kill_process(self, process_obj):
+        '''
+        Kill the process that created by the subprocess popen. It is necessary
+        to start the process with new session to kill all the child process.
+        @param process_obj: the process obj that returned by execute_cmd_bg
+        '''
+        if not process_obj:
+            self.nv_log_handler.info("Cannot kill a non existent process")
+            return
+        try:
+            os.killpg(os.getpgid(process_obj.pid), SIGTERM)
+        except Exception as e:
+            self.nv_log_handler.error("Failed to kill the process %d "
+                                      "Exception :  %s", process_obj.pid, e)
+            raise e
 
     def is_path_exists(self, path):
         return os.path.exists(path)
@@ -203,6 +242,29 @@ class nv_linux_lib():
                 if is_exe:
                     return exe_file
         return None
+
+    def get_free_listen_port(self):
+        '''
+        Returns a unused port in the system for the module to use.
+        NOTE :: It is the responsibility of application to use the port as soon
+        as possible.. It is possible that the port may be used by some other
+        appln if it take long time to consume.
+        This method offers the ports in best effort. It doesnt guarantee the
+        port is free as long as its used. What it offer is, a free
+        port that is available at the moment of executing the function.
+        @return: port : port number/socket number.
+        '''
+        import socket
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind(("",0))
+            s.listen(1)
+            port = s.getsockname()[1]
+            s.close()
+        except Exception as e:
+            self.nv_log_handler.error("Failed to get a unused port, %s", e)
+            raise e
+        return port
 
 class nv_os_lib():
     '''
@@ -356,3 +418,18 @@ class nv_os_lib():
         if self.context is None:
             self.nv_log_handler.error("Platform not defined.")
         return self.context.get_filesize_in_bytes(file_path)
+
+    def get_free_listen_port(self):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.get_free_listen_port()
+
+    def execute_cmd_bg(self, cmd, args):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.execute_cmd_bg(cmd, args)
+
+    def kill_process(self, process_obj):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.kill_process(process_obj)
