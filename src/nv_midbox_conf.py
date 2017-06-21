@@ -417,9 +417,9 @@ class nv_midbox_conf():
             return
         try:
             url = self.cam_thread_mgr.start_cam_live(cam_record)
-        except:
-            self.nv_log_handler.error("Failed to start live stream for %s",
-                                      cam_name)
+        except Exception as e:
+            self.nv_log_handler.error("Failed to start live stream for %s"
+                                      " Exception %s", cam_name, e)
             return
         #Update the database when the live streaming is started successfully
         cam_record.live_url = url
@@ -442,10 +442,10 @@ class nv_midbox_conf():
                                      cam_record.name)
             return
         try:
-            self.cam_thread_mgr.stop_cam_live(cam_record)
-        except:
-            self.nv_log_handler.info("Cannot stop live streaming on %s",
-                                     cam_name)
+            self.cam_thread_mgr.stop_cam_live(cam_record.cam_id)
+        except Exception as e:
+            self.nv_log_handler.info("Cannot stop live streaming on %s"
+                                     " Exception %s", cam_name, e)
             return
         cam_record.live_url = None
         db_mgr_obj.db_commit()
