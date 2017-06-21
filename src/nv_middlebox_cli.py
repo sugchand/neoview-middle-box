@@ -59,7 +59,7 @@ class nv_middlebox_cli(threading.Thread):
         self.nv_log_handler.debug("Exiting the nv_midbox cli thread.")
 
     def do_execute_nv_midbox_cli(self):
-        for i, (key, value) in enumerate(NV_MIDBOX_CLI_FNS.items()):
+        for i, (key, _) in enumerate(NV_MIDBOX_CLI_FNS.items()):
             print_color_string(str(i) + " : " + key, color="cyan")
         choice = (input("Enter your choice[0-%d] : " %i))
 
