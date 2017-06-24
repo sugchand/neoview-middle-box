@@ -62,7 +62,7 @@ class nv_cam_liveview():
                                    "--no-sout-audio" ]
         try:
             self.live_thread = self.os_context.execute_cmd_bg("cvlc", vlc_args)
-            self.live_url = port_num + "/" + self.cam_name
+            self.live_url = port_num + "/" + str(self.cam_id)
         except Exception as e:
             self.nv_log_handler.error("Failed to start the live stream"
                                       "Error is %s", e)

@@ -67,8 +67,8 @@ class midbox_wsClient():
             # Local connection to same server, No need to verify SSL cert.
             self.ws_client = create_connection(self.ws_path,
                                             sslopt={"cert_reqs": ssl.CERT_NONE})
-        except:
-            self.nv_log_handler.error("Failed to make ws connection..")
+        except Exception as e:
+            self.nv_log_handler.error("Failed to make ws connection.. %s", e)
             return
 
         ntfy_data = self.create_notify_json()
