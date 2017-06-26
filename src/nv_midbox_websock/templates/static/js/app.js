@@ -1,7 +1,7 @@
 'use strict'
 angular.module('landingApp', [])
 .controller('landingController', ['$scope', '$window', function($scope, $window) {
-  var host = "wss://" + $window.location.host + "/userwebsocket",
+  var host = "wss://" + $window.location.hostname + ":8080/userwebsocket",
   cameraStatus = [],
   ws = new WebSocket(host);
   if($window.localStorage.getItem("camera")) {
