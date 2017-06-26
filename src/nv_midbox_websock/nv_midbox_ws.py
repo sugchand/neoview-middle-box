@@ -223,13 +223,25 @@ class ServerIndexPageHandler(tornado.web.RequestHandler):
     def get(self):
         self.render("serv_index.html")
 
-class Application(tornado.web.Application):
+class WSApplication(tornado.web.Application):
+
+    def __init__(self):
+        handlers = [
+            (r'/userwebsocket', UserWebSocketHandler),
+            (r"/static/(.*)",tornado.web.StaticFileHandler, {"path": "./static"},)
+        ]
+        settings = {
+            'debug' : True,
+            "static_path": "src/nv_midbox_websock/templates/static",
+            'template_path': 'src/nv_midbox_websock/templates'
+        }
+        tornado.web.Application.__init__(self, handlers, **settings)
+
+class SwitchApplication(tornado.web.Application):
 
     def __init__(self):
         handlers = [
             (r'/', IndexPageHandler),
-            (r'/server', ServerIndexPageHandler),
-            (r'/userwebsocket', UserWebSocketHandler),
             (r"/static/(.*)",tornado.web.StaticFileHandler, {"path": "./static"},)
         ]
         settings = {
@@ -249,7 +261,8 @@ class nv_midbox_ws(threading.Thread):
 
     def run(self):
         try:
-            ws_app = Application()
+            ws_app = WSApplication()
+            page_app = SwitchApplication()
             cert_file = os.getcwd() + "/ssl_data/nvmidbox.cert"
             key_file = os.getcwd() + "/ssl_data/nvmidbox.key"
 
@@ -259,17 +272,19 @@ class nv_midbox_ws(threading.Thread):
                 ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
                 ssl_ctx.load_cert_chain(cert_file, key_file)
                 server = tornado.httpserver.HTTPServer(ws_app,
-                                                       ssl_options=ssl_ctx)
+                                                    ssl_options=ssl_ctx)
             else:
                 # ssl data is missing, so start webserver in http mode.
                 self.nv_log_handler.info("Starting midbox HTTP server..")
                 server = tornado.httpserver.HTTPServer(ws_app)
-
+            # The server for switch page.
+            page_server = tornado.httpserver.HTTPServer(page_app)
+            page_server.listen(9000)
             server.listen(8080)
             tornado.ioloop.IOLoop.instance().start()
-        except:
+        except Exception as e:
             self.nv_log_handler.error("Unknown error while starting"
-                                      " websocket server")
+                                      " websocket server %s", e)
 
     def stop(self):
         super(nv_midbox_ws, self).stop()
