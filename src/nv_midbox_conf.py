@@ -157,7 +157,8 @@ class nv_midbox_conf():
                 enum_ipcOpCode.CONST_STOP_CAMERA_STREAM_OP : "nv_midbox_stop_stream",
                 enum_ipcOpCode.CONST_UPDATE_CAMERA_STATUS : "nv_midbox_cam_status_update",
                 enum_ipcOpCode.CONST_START_CAMERA_LIVESTREAM : "nv_midbox_start_livestream",
-                enum_ipcOpCode.CONST_STOP_CAMERA_LIVESTREAM : "nv_midbox_stop_livestream"
+                enum_ipcOpCode.CONST_STOP_CAMERA_LIVESTREAM : "nv_midbox_stop_livestream",
+                enum_ipcOpCode.CONST_UPDATE_CAMERA_LIVESTREAM_URL : "nv_midbox_update_live_url"
                       }
         op = conf_obj.get_ipc_op()
         self.do_conf_op(op, CAM_OP_FNS, conf_obj)
@@ -411,7 +412,7 @@ class nv_midbox_conf():
                                       "livestream %s", cam_name)
             return
         if cam_record.live_url:
-            self.nv_log_handler.info("Cannot start livestream again, "
+            self.nv_log_handler.info("Cannot start livestream again, "\
                                      "livestream is running at %s",
                                      cam_record.live_url)
             return
@@ -451,3 +452,21 @@ class nv_midbox_conf():
         db_mgr_obj.db_commit()
         # Call the webclient notification after the live stream started.
         # It is the responsibility of caller to do so.
+
+    def nv_midbox_update_live_url(self, cam_obj):
+        cam_name = cam_obj.name
+        filter_arg = {'name' : cam_name}
+        cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera, filter_arg)
+        if cam_record is None:
+            self.nv_log_handler.error("No camera record found to update "
+                                      "liveurl %s", cam_name)
+            return
+        try:
+            cam_record.live_url = cam_obj.live_url
+            db_mgr_obj.db_commit()
+        except:
+            self.nv_log_handler.info("Failed to update the liveurl to %s"
+                                     " for the camera %s", cam_obj.live_url,
+                                     cam_name)
+        GBL_WSCLIENT.send_notify()
+
