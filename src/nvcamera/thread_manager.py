@@ -10,6 +10,7 @@ __version__ = "1.0"
 from src.nvcamera.cam_handler import cam_handler
 from src.nv_logger import nv_logger
 from src.nvcamera.cam_liveview import nv_cam_liveview
+from time import sleep
 '''
 Camera handler thread dictionary. the format for the dictionary should be
 { cam_id : cam_handler obj }
@@ -28,13 +29,15 @@ class thread_manager():
     middle box application.
     '''
     def __init__(self):
-        # Initialize the thread manager.
+        # Initialize the thread manager
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.cam_thread_dic = {}
         self.join_cam_thread_dic = {}
         # Live streaming dictionary, A dictionary maintained for live streaming
         # threads.
         self.cam_live_threads = {}
+        # camera live threads for join
+        self.join_cam_live_threads = {}
 
     def start_camera_thread(self,cam_table_entry):
         # Create a thread for camera stream handling if not exists
@@ -132,7 +135,10 @@ class thread_manager():
         live_obj = nv_cam_liveview(cam_tbl_entry = cam_tbl_entry)
         try:
             self.nv_log_handler.debug("starting the live on %s", cam_tbl_entry.name)
-            url = live_obj.start_live_preview()
+            live_obj.start_live_preview()
+            self.nv_log_handler.info("Live-url is getting ready.... ")
+            sleep(2) # Make sure the live url is populated in the live thread.
+            url = live_obj.get_live_preview_url()
             self.cam_live_threads[cam_id] = live_obj
             return url
         except Exception as e:
@@ -155,6 +161,7 @@ class thread_manager():
             return
         try:
             live_obj.stop_live_preview()
+            self.join_cam_live_threads[cam_id] =self.cam_live_threads[cam_id]
             self.cam_live_threads[cam_id] = None
             self.nv_log_handler.info("Stopped the camera live thread for %s",
                                      live_obj.get_camera_name())
@@ -162,6 +169,12 @@ class thread_manager():
             self.nv_log_handler.error("Failed to stop live preview on %s"
                                       "Exception is %s",
                                       live_obj.get_camera_name(), e)
+        try:
+            live_obj.join_live_preview()
+            self.join_cam_live_threads[cam_id] = None
+        except Exception as e:
+            self.nv_log_handler.info("Failed to do join on livethread "
+                                     "of camera %s", live_obj.get_camera_name())
 
     def stop_all_camlive(self):
         self.nv_log_handler.debug("stopping all the camera live streams")

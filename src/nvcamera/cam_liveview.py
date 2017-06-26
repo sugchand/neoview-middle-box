@@ -9,7 +9,12 @@ __version__ = "1.0"
 
 from src.nv_logger import nv_logger
 from src.nv_lib.nv_os_lib import nv_os_lib
+from src.nv_lib.ipc_data_obj import enum_ipcOpCode, camera_data
+from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
 import ipaddress
+from threading import Thread
+from threading import Event
+from time import sleep
 
 class nv_cam_liveview():
     '''
@@ -31,22 +36,20 @@ class nv_cam_liveview():
         self.cam_ip = str(ipaddress.IPv4Address(cam_tbl_entry.ip_addr))
         self.cam_listen_port = str(cam_tbl_entry.listen_port)
         self.os_context = nv_os_lib()
-        self.live_thread = None
+        self.live_thread_cmd = None
+        self.live_cam_thread = None
+        self.cam_live_stop_event = Event()
+        self.stream_len_sec = cam_tbl_entry.stream_file_time_sec
+        self.live_stream_timeout = self.stream_len_sec * 3
 
-    def start_live_preview(self):
+    def do_live_preview(self):
         '''
-        Start the preview thread to do the transcode and xmit the stream
-        @return live_url : HTTP url to view the live preview.
+        Helper function to do the live preview operation
         '''
         cam_src_path = ["rtsp://" + self.cam_uname + ":" + self.cam_pwd + "@" +\
                         self.cam_ip + ":" + self.cam_listen_port]
         vlc_out_opts = cam_src_path + ["--live-caching=3000"]
 
-        if self.live_url:
-            self.nv_log_handler.info("The live stream is already running on %s",
-                                     "Cannot start the stream again", 
-                                     self.live_url)
-            return None
         if self.os_context.is_pgm_installed('cvlc') is None:
             #The cvlc is not found.
             self.nv_log_handler.error("cvlc is not installed, cannot live-stream")
@@ -61,29 +64,138 @@ class nv_cam_liveview():
                                    + port_num + "/" + str(self.cam_id) + "}",
                                    "--no-sout-audio" ]
         try:
-            self.live_thread = self.os_context.execute_cmd_bg("cvlc", vlc_args)
+            self.live_thread_cmd = self.os_context.execute_cmd_bg("cvlc", vlc_args)
             self.live_url = port_num + "/" + str(self.cam_id)
         except Exception as e:
             self.nv_log_handler.error("Failed to start the live stream"
                                       "Error is %s", e)
-            self.live_thread = None
+            self.live_thread_cmd = None
             raise e
         return self.live_url
 
+    def start_live_preview__(self, stop_event):
+        '''
+        (Class internal function)
+        Start the preview thread to do the transcode and xmit the stream
+        Set the HTTP url to view the live preview.
+        @param  stop_event : Sets by thread manager to stop the live preview
+        '''
+        if self.live_url:
+            self.nv_log_handler.info("The live stream is already running on %s"
+                                     "Cannot start the stream again",
+                                     self.live_url)
+            return
+        try:
+            #Check if the port and camera ip is reachable.
+            is_open = self.os_context.is_remote_port_open(ip=self.cam_ip,
+                                                port=int(self.cam_listen_port))
+            if not is_open:
+                self.nv_log_handler.error("Camera is unreachable,"
+                                          "cannot start the live-preview..")
+                self.live_url = None
+                return
+            self.do_live_preview()
+        except:
+            self.nv_log_handler.info("Failed to start the live preview.")
+            return
+
+        # Live preview may disturbed by external connectivity issues. There is
+        # no way liveview thread can detect those issues. Once the connection
+        # is lost liveview thread becomes rogue and it cannot reconnect again
+        # when camera become live.
+        # As a fix liveview thread teardown connection to camera for
+        # every 3 * stream_filelen. And create a new connection. This allows the
+        # live view is stopped indefinitly for a camera.
+        if self.stream_len_sec <= 0:
+            self.nv_log_handler.error("stream length in seconds is not valid,"
+                                      " cannot run the live view thread")
+            return
+        timeout = self.live_stream_timeout
+        new_liveUrl = None
+        while not stop_event.is_set():
+            sleep(1)
+            timeout -= 1 # decrement timeout by approx 1 sec.
+            if timeout >= 0:
+                continue
+            timeout = self.live_stream_timeout
+            # Stop the previous thread
+            self.stop_live_preview__()
+            try:
+                new_liveUrl= self.do_live_preview()
+            except:
+                self.nv_log_handler.info("Failed to start live preview")
+                return
+            self.live_url = new_liveUrl
+            # Update the config module
+            try:
+                # Only name and new url needed to update the liveurl.
+                live_obj = camera_data(op = enum_ipcOpCode.CONST_UPDATE_CAMERA_LIVESTREAM_URL,
+                               name = self.cam_name,
+                               # Everything else can be None
+                               status = None,
+                               ip = None,
+                               macAddr = None,
+                               port = None,
+                               time_len = None,
+                               uname = None,
+                               pwd = None,
+                               desc = None,
+                               live_url = new_liveUrl
+                               )
+                GBL_CONF_QUEUE.enqueue_data(obj_len = 1,
+                                            obj_value = [live_obj])
+            except:
+                self.nv_log_handler.error("Failed to update live stream url of %s",
+                                          self.cam_name)
+                self.stop_live_preview__()
+
+        # stop the thread as the live view is stopped by thread manager.
+        self.stop_live_preview__()
+
+    def start_live_preview(self):
+        '''
+        Start the camera live view thread
+        '''
+        if self.live_cam_thread:
+            self.nv_log_handler.error("Cannot start live-view thread, "
+                                        "its already exists")
+            return
+        self.live_cam_thread = Thread(name=self.cam_id,
+                              target=self.start_live_preview__,
+                              args = (self.cam_live_stop_event,))
+        self.live_cam_thread.daemon = True
+        self.live_cam_thread.start()
+
     def stop_live_preview(self):
         '''
-        Stop the live preview of the camera.
+        External function to stop the live view thread
         '''
-        if not self.live_thread:
+        self.cam_live_stop_event.set()
+
+    def stop_live_preview__(self):
+        '''
+        Stop the live preview of the camera.(Class internal function)
+        '''
+        if not self.live_thread_cmd:
             self.nv_log_handler.info("live stream thread is not running for %s",
                                      self.cam_name)
             return
         try:
-            self.os_context.kill_process(self.live_thread)
+            self.os_context.kill_process(self.live_thread_cmd)
+            self.live_url = None
         except Exception as e:
             self.nv_log_handler.error("Failed to kill the live stream for %s",
                                       self.cam_name)
             raise e
+
+    def join_live_preview(self, timeout=2):
+        '''
+        Join wait call for the live view thread, Must called to make sure the
+        thread is stopped successfully
+        @param timeout: timeout to exit the join call. 
+        '''
+        if self.live_cam_thread is not None and self.live_cam_thread.isAlive():
+            self.live_cam_thread.join(timeout=timeout)
 
     def get_live_preview_url(self):
         '''
