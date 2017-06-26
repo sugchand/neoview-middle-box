@@ -266,6 +266,32 @@ class nv_linux_lib():
             raise e
         return port
 
+    def is_remote_port_open(self, ip, port):
+        '''
+        Check if a port is open on a remote system. useful to check the
+        connectivity to the camera.
+        @param ip : ip address of remote machine in string format.
+        @param port: port to check connectivity. Integer value
+        @return: TRUE/FALSE : If port is open or not.
+        '''
+        if ip is None or port is None:
+            self.nv_log_handler.info("Invalid port/ip, cannot validate port-open")
+            return False
+        try:
+            import socket
+            socket.setdefaulttimeout(10)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result = sock.connect_ex((ip,port))
+            if result == 0:
+                return True
+        except Exception as e:
+            self.nv_log_handler.error("Cannot validate if port is open"
+                                      "Exception %s", e)
+            return False
+        finally:
+            socket.setdefaulttimeout(None)
+            sock.close()
+
 class nv_os_lib():
     '''
     Library class for OS interaction.All the external application interaction
@@ -433,3 +459,8 @@ class nv_os_lib():
         if self.context is None:
             self.nv_log_handler.error("Platform not defined.")
         return self.context.kill_process(process_obj)
+
+    def is_remote_port_open(self, ip, port):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined.")
+        return self.context.is_remote_port_open(ip, port)
