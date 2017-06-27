@@ -73,6 +73,21 @@ class nv_cam_liveview():
             raise e
         return self.live_url
 
+    def is_camera_reachable(self):
+        #Check if the port and camera ip is reachable.
+        try:
+            is_open = self.os_context.is_remote_port_open(ip=self.cam_ip,
+                                        port=int(self.cam_listen_port))
+            if is_open:
+                return True
+        except:
+            self.nv_log_handler.error("Exception while checking "
+                                      "connectivity to camera %s",
+                                      self.cam_name)
+        self.nv_log_handler.error("Camera is unreachable,"
+                                "cannot start the live-preview..")
+        return False
+
     def start_live_preview__(self, stop_event):
         '''
         (Class internal function)
@@ -87,11 +102,7 @@ class nv_cam_liveview():
             return
         try:
             #Check if the port and camera ip is reachable.
-            is_open = self.os_context.is_remote_port_open(ip=self.cam_ip,
-                                                port=int(self.cam_listen_port))
-            if not is_open:
-                self.nv_log_handler.error("Camera is unreachable,"
-                                          "cannot start the live-preview..")
+            if not self.is_camera_reachable():
                 self.live_url = None
                 return
             self.do_live_preview()
@@ -118,10 +129,12 @@ class nv_cam_liveview():
             if timeout >= 0:
                 continue
             timeout = self.live_stream_timeout
-            # Stop the previous thread
-            self.stop_live_preview__()
             try:
-                new_liveUrl= self.do_live_preview()
+                # Stop the previous thread
+                self.stop_live_preview__()
+                # Make sure the connectivity to camera before starting the vlc
+                if self.is_camera_reachable():
+                    new_liveUrl= self.do_live_preview()
             except:
                 self.nv_log_handler.info("Failed to start live preview")
                 return
