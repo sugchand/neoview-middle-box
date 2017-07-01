@@ -135,8 +135,10 @@ class nv_cam_liveview():
                 self.live_url = None
                 return
             self.do_live_preview()
-        except:
-            self.nv_log_handler.info("Failed to start the live preview.")
+        except Exception as e:
+            self.live_url = None
+            self.nv_log_handler.error("Failed to start the live preview on %s"
+                                      "Exception :%s", self.cam_name, e)
             return
 
         # Live preview may disturbed by external connectivity issues. There is
@@ -149,6 +151,14 @@ class nv_cam_liveview():
         if self.stream_len_sec <= 0:
             self.nv_log_handler.error("stream length in seconds is not valid,"
                                       " cannot run the live view thread")
+            try:
+                self.stop_live_preview__()
+            except:
+                self.nv_log_handler.error("Failed to stop streaming for %s"
+                                          "when the stream timeout is invalid",
+                                          self.cam_name)
+            finally:
+                self.live_url = None
             return
         timeout = self.live_stream_timeout
         while not stop_event.is_set():
