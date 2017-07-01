@@ -450,8 +450,10 @@ class nv_midbox_conf():
             return
         cam_record.live_url = None
         db_mgr_obj.db_commit()
-        # Call the webclient notification after the live stream started.
+        # Call the webclient notification after the live stream stopped.
         # It is the responsibility of caller to do so.
+        # livestream is stopped as part of camera delete. So the webclient
+        # update is called in that function.
 
     def nv_midbox_update_live_url(self, cam_obj):
         cam_name = cam_obj.name
