@@ -199,13 +199,14 @@ class nv_cam_liveview():
         '''
         Stop the live preview of the camera.(Class internal function)
         '''
-        if not self.live_thread_cmd:
+        if not self.live_thread_cmd or not self.live_url:
             self.nv_log_handler.info("live stream thread is not running for %s",
                                      self.cam_name)
             return
         try:
             self.os_context.kill_process(self.live_thread_cmd)
             self.live_url = None
+            self.live_thread_cmd = None
         except Exception as e:
             self.nv_log_handler.error("Failed to kill the live stream for %s",
                                       self.cam_name)
