@@ -84,8 +84,9 @@ class nv_cam_liveview():
             self.nv_log_handler.error("Exception while checking "
                                       "connectivity to camera %s",
                                       self.cam_name)
-        self.nv_log_handler.error("Camera is unreachable,"
-                                "cannot start the live-preview..")
+        self.nv_log_handler.error("%s Camera is unreachable,"
+                                "cannot start the live-preview..",
+                                self.cam_name)
         return False
 
     def update_livestream_in_DB(self, new_liveUrl = None):
