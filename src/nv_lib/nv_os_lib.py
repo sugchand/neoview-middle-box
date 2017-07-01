@@ -141,7 +141,8 @@ class nv_linux_lib():
             self.nv_log_handler.info("Cannot kill a non existent process")
             return
         try:
-            os.killpg(os.getpgid(process_obj.pid), SIGTERM)
+            process_obj.terminate()
+            process_obj.communicate()
         except Exception as e:
             self.nv_log_handler.error("Failed to kill the process %d "
                                       "Exception :  %s", process_obj.pid, e)
