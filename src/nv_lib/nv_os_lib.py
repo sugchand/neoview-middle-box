@@ -281,10 +281,11 @@ class nv_os_lib():
             self.nv_log_handler.error("Windows support is not available now.")
             raise NotImplementedError("Windows support is not available.")
         else:
-            self.nv_log_handler.error("The platform cannot determined ")
-            raise NotImplementedError("Unsupported platform %s" 
-                                      % platform.system())
-
+            # self.nv_log_handler.error("The platform cannot determined ")
+            # raise NotImplementedError("Unsupported platform %s" 
+            #                           % platform.system())
+            self.context = nv_linux_lib()
+            
     def execute_cmd(self, cmd, args):
         ''''
         Execute a command on the system.
