@@ -19,7 +19,8 @@ angular.module('landingApp', [])
   function init() {
     ws.onmessage = function(e) {
       var parsed = JSON.parse(e.data),
-        localCam = $window.localStorage.getItem("camera");
+          videoArr = [],sourceArr = [],
+          localCam = $window.localStorage.getItem("camera");
       if(localCam) {
         parsed = parsed.filter(function(camInfo) {
           return camInfo.name == localCam;
@@ -29,7 +30,10 @@ angular.module('landingApp', [])
       $scope.cameraInfo = [];
       for(var i=0;i<parsed.length;i++) {
         if(!isEmpty(parsed[i])) {
-          $scope.cameraInfo[i] = parsed[i];
+          $scope.cameraInfo[i] = parsed[i]; 
+          if(parsed[i].liveUrl) {
+            $scope.cameraInfo[i].streamUrl = "http://" + window.location.hostname + ":" + parsed[i].liveUrl;
+          }
           if(cameraStatus.length > 0) {
             _.each(cameraStatus, function(cameraSt, index) {
               if(i === index && $scope.cameraInfo[i].status === 3) {
@@ -79,6 +83,31 @@ angular.module('landingApp', [])
       }
     }
     return true;
-  };
+  };    
 
-}]);
+  $scope.$on('ngRepeatFinished', function(ngRepeatFinishedEvent) {
+    var videoArr=[],sourceArr=[];
+    for(var j=0;j<$scope.cameraInfo.length;j++) {
+      if($scope.cameraInfo[j].streamUrl) {
+        videoArr[j] = document.getElementById("video"+j);
+        sourceArr[j] = document.getElementById("source"+j);
+        sourceArr[j].setAttribute('src', $scope.cameraInfo[j].streamUrl);
+        videoArr[j].load();
+        videoArr[j].play();
+      }
+    }
+  }); 
+
+}])
+.directive('onFinishRender', function ($timeout) {
+  return {
+    restrict: 'A',
+    link: function (scope, element, attr) {
+      if (scope.$last === true) {
+        $timeout(function () {
+            scope.$emit(attr.onFinishRender);
+        });
+      }
+    }
+  }
+});
