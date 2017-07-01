@@ -88,6 +88,34 @@ class nv_cam_liveview():
                                 "cannot start the live-preview..")
         return False
 
+    def update_livestream_in_DB(self, new_liveUrl = None):
+        '''
+        Update the livestream in the configuration DB
+        '''
+        # Update the config module
+        try:
+            # Only name and new url needed to update the liveurl.
+            live_obj = camera_data(op = enum_ipcOpCode.CONST_UPDATE_CAMERA_LIVESTREAM_URL,
+                                   name = self.cam_name,
+                                   # Everything else can be None
+                                   status = None,
+                                   ip = None,
+                                   macAddr = None,
+                                   port = None,
+                                   time_len = None,
+                                   uname = None,
+                                   pwd = None,
+                                   desc = None,
+                                   live_url = new_liveUrl
+                                   )
+            GBL_CONF_QUEUE.enqueue_data(obj_len = 1,
+                                        obj_value = [live_obj])
+        except Exception as e:
+            self.nv_log_handler.error("Failed to update live stream url of %s"
+                                      "Exception : %s",
+                                       self.cam_name, e)
+            raise e
+
     def start_live_preview__(self, stop_event):
         '''
         (Class internal function)
@@ -122,8 +150,8 @@ class nv_cam_liveview():
                                       " cannot run the live view thread")
             return
         timeout = self.live_stream_timeout
-        new_liveUrl = None
         while not stop_event.is_set():
+            new_liveUrl = None
             sleep(1)
             timeout -= 1 # decrement timeout by approx 1 sec.
             if timeout >= 0:
@@ -135,32 +163,13 @@ class nv_cam_liveview():
                 # Make sure the connectivity to camera before starting the vlc
                 if self.is_camera_reachable():
                     new_liveUrl= self.do_live_preview()
-            except:
-                self.nv_log_handler.info("Failed to start live preview")
-                return
-            self.live_url = new_liveUrl
-            # Update the config module
-            try:
-                # Only name and new url needed to update the liveurl.
-                live_obj = camera_data(op = enum_ipcOpCode.CONST_UPDATE_CAMERA_LIVESTREAM_URL,
-                               name = self.cam_name,
-                               # Everything else can be None
-                               status = None,
-                               ip = None,
-                               macAddr = None,
-                               port = None,
-                               time_len = None,
-                               uname = None,
-                               pwd = None,
-                               desc = None,
-                               live_url = new_liveUrl
-                               )
-                GBL_CONF_QUEUE.enqueue_data(obj_len = 1,
-                                            obj_value = [live_obj])
-            except:
-                self.nv_log_handler.error("Failed to update live stream url of %s",
-                                          self.cam_name)
-                self.stop_live_preview__()
+            except Exception as e:
+                self.nv_log_handler.info("Failed to start live preview again "
+                                         " on %s Exception %s",
+                                         self.cam_name, e)
+            finally:
+                self.live_url = new_liveUrl
+                self.update_livestream_in_DB(new_liveUrl = new_liveUrl)
 
         # stop the thread as the live view is stopped by thread manager.
         self.stop_live_preview__()
