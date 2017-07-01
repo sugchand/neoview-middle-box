@@ -44,10 +44,10 @@ class nv_middlebox():
                 self.nv_conf.exit_all_threads()
 
 if __name__ == "__main__":
-    if platform.system() != 'Linux':
-        default_nv_log_handler.error("Neoview Middlebox works only on Linux " +
-                                     "platform")
-        exit(1)
+    # if platform.system() != 'Linux':
+    #     default_nv_log_handler.error("Neoview Middlebox works only on Linux " +
+    #                                  "platform")
+    #     exit(1)
     nv_mid_obj = nv_middlebox()
     try:
         nv_mid_obj.run()
