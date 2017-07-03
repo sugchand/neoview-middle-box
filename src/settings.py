@@ -26,7 +26,8 @@ NV_CAM_VALID_FILE_SIZE_MB = 4   # 4MB
 # The timeout period to consider a camera is dead. camera will be considered as
 # disconnected when filesize < NV_CAM_VALID_FILE_SIZE_MB for a period of
 # NV_CAM_CONN_TIMEOUT.
-NV_CAM_CONN_TIMEOUT = 180  # 180 sec/3 min
+# The minimum timeout woule be atleast 5 min.
+NV_CAM_CONN_TIMEOUT = 300  # 300 sec/5 min
 
 # nv-middle-box logging Settings
 NV_DEFAULT_LOG_LEVEL = logging.DEBUG
