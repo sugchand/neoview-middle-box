@@ -24,7 +24,7 @@
       }
       .cam-desc {
         width: 348px;
-        padding: 30px 0;
+        padding: 16px 0px;
         background-color: #fcf4f4;
         margin: 25px 0;
       }
@@ -40,19 +40,26 @@
             <button class="btn btn-primary" ng-click="btnAllCamera()" >All Cameras</button>
           </div>
         </div>
-        <div class="col-lg-3 col-md-4 col-xs-6 thumb" ng-if="cameraInfo && cameraInfo.length > 0" ng-repeat="camera in cameraInfo track by $index">
+        <div class="col-lg-3 col-md-4 col-xs-6 thumb" ng-if="cameraInfo && cameraInfo.length > 0" ng-repeat="camera in cameraInfo track by $index" on-finish-render="ngRepeatFinished()">
           <div class="col-xs-12">
-            <div class="col-xs-6">
-              <h3>{{!camera.name}}</h3>
+            <div class="row">
+              <div class="col-xs-6">
+                <h3>{{!camera.name}}</h3>
+              </div>
+              <div class="col-xs-6">
+                <button class="btn btn-primary" ng-if="!allCamera" ng-click="cameraClick(camera)" style="float:right; margin-top: 15px; text-align:right;">Select</button>
+              </div>
+              <div class="col-xs-12" style="width:348px;height:100px;">
+                <video ng-if="camera.streamUrl" autoplay style="width:300px;height:150px;" id="video{{!$index}}">
+                  <source id="source{{!$index}}" type="video/ogg">
+                </video>
+                <i ng-if="!camera.streamUrl" class="fa fa-5x fa-camera" style="padding-left:33%;"></i>
+              </div>
             </div>
-            <div class="col-xs-6">
-              <button class="btn btn-primary" ng-if="!allCamera" ng-click="cameraClick(camera)" style="float:right; margin-top: 15px; text-align:right;">Select</button>
-            </div>
-            <i class="fa fa-5x fa-camera" style="padding-left:33%;"></i>
           </div>
           <div class="cam-desc col-xs-12">
             <div class="col-md-6 col-xs-6">
-              <h4>Camera Status </h4>
+              <h4>Streaming</h4>
             </div>
             <div class="col-md-6 col-xs-6" ng-if="camera.status != 4">
               <label class="switch">
@@ -75,6 +82,7 @@
             </div>
           </div>
         </div>
+        <!-- <div class="col-lg-3 col-md-4 col-xs-6 thumb" id="mainDiv"></div> -->
       </div>
     </div>
     <script src="static/js/js_lib/jquery.js"></script>

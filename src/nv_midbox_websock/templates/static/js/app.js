@@ -2,7 +2,7 @@
 angular.module('landingApp', [])
 .controller('landingController', ['$scope', '$window', function($scope, $window) {
   var host = "wss://" + $window.location.hostname + ":8080/userwebsocket",
-  cameraStatus = [],
+  cameraStatus = [],reload_video=false,
   ws = new WebSocket(host);
   if($window.localStorage.getItem("camera")) {
     $scope.allCamera = true;
@@ -19,7 +19,8 @@ angular.module('landingApp', [])
   function init() {
     ws.onmessage = function(e) {
       var parsed = JSON.parse(e.data),
-        localCam = $window.localStorage.getItem("camera");
+          videoArr = [],sourceArr = [],
+          localCam = $window.localStorage.getItem("camera");
       if(localCam) {
         parsed = parsed.filter(function(camInfo) {
           return camInfo.name == localCam;
@@ -30,6 +31,9 @@ angular.module('landingApp', [])
       for(var i=0;i<parsed.length;i++) {
         if(!isEmpty(parsed[i])) {
           $scope.cameraInfo[i] = parsed[i];
+          if(parsed[i].liveUrl) {
+            $scope.cameraInfo[i].streamUrl = "http://" + window.location.hostname + ":" + parsed[i].liveUrl;
+          }
           if(cameraStatus.length > 0) {
             _.each(cameraStatus, function(cameraSt, index) {
               if(i === index && $scope.cameraInfo[i].status === 3) {
@@ -41,11 +45,14 @@ angular.module('landingApp', [])
         }
       }
       $scope.$apply();
+      if(reload_video) {
+        $scope.ngRepeatFinished();
+      }
+      reload_video = true;
     };
   };
 
   init();
-
 
   $scope.changeChk = function(index, new_status, disableFlg) {
     if(disableFlg) {
@@ -81,4 +88,29 @@ angular.module('landingApp', [])
     return true;
   };
 
-}]);
+  $scope.ngRepeatFinished = function() {
+    var videoArr=[],sourceArr=[];
+    for(var j=0;j<$scope.cameraInfo.length;j++) {
+      if($scope.cameraInfo[j].streamUrl) {
+        videoArr[j] = document.getElementById("video"+j);
+        sourceArr[j] = document.getElementById("source"+j);
+        sourceArr[j].setAttribute('src', $scope.cameraInfo[j].streamUrl);
+        videoArr[j].load();
+        videoArr[j].play();
+      }
+    }
+  }
+
+}])
+.directive('onFinishRender', function ($timeout) {
+  return {
+    restrict: 'A',
+    link: function (scope, element, attr) {
+      if (scope.$last) {
+        $timeout(function () {
+          scope.$eval(attr.onFinishRender);
+        });
+      }
+    }
+  }
+});
