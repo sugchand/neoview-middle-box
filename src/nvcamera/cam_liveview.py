@@ -117,6 +117,25 @@ class nv_cam_liveview():
                                        self.cam_name, e)
             raise e
 
+    def restart_live_stream(self):
+        '''
+        Stop the current live stream thread and start a new one.
+        Used to restart the live preview in case there are connection
+        issues with the camera
+        @return: url : the new url after starting the live stream
+        '''
+        new_liveUrl = None
+        try:
+            self.stop_live_preview__()
+            new_liveUrl= self.do_live_preview()
+        except Exception as e:
+            self.nv_log_handler.info("Failed to start live preview again "
+                                     " on %s Exception %s",
+                                     self.cam_name, e)
+            raise e
+        finally:
+            return new_liveUrl
+
     def start_live_preview__(self, stop_event):
         '''
         (Class internal function)
@@ -160,27 +179,33 @@ class nv_cam_liveview():
             finally:
                 self.live_url = None
             return
-        timeout = self.live_stream_timeout
+        timeout = 0
+        cam_conn_ok = True
+        new_liveUrl = None
+        self.update_livestream_in_DB(new_liveUrl = self.live_url)
         while not stop_event.is_set():
-            new_liveUrl = None
-            sleep(1)
-            timeout -= 1 # decrement timeout by approx 1 sec.
-            if timeout >= 0:
+            sleep(0.25) # 25 milliseconds to check the connections
+            if timeout:
+                # Camera disconnected and wait for reconnect mode
+                timeout -= 1
                 continue
-            timeout = self.live_stream_timeout
             try:
-                # Stop the previous thread
-                self.stop_live_preview__()
-                # Make sure the connectivity to camera before starting the vlc
-                if self.is_camera_reachable():
-                    new_liveUrl= self.do_live_preview()
-            except Exception as e:
-                self.nv_log_handler.info("Failed to start live preview again "
-                                         " on %s Exception %s",
-                                         self.cam_name, e)
-            finally:
+                # Validate the camera reachability.
+                if not self.is_camera_reachable():
+                    timeout = self.live_stream_timeout
+                    cam_conn_ok = False
+                    continue
+                # Camera is reachable, but need to check if connection is OK
+                if cam_conn_ok:
+                    continue
+                # Have camera connectivity, but connection lost before. so
+                # reconnect
+                new_liveUrl = self.restart_live_stream()
+                cam_conn_ok = True
                 self.live_url = new_liveUrl
                 self.update_livestream_in_DB(new_liveUrl = new_liveUrl)
+            except Exception as e:
+                self.stop_live_preview__()
 
         # stop the thread as the live view is stopped by thread manager.
         self.stop_live_preview__()
