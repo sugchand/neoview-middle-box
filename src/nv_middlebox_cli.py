@@ -173,11 +173,7 @@ class nv_middlebox_cli(threading.Thread):
         cam_pwd = getpass(prompt = "Password(default : root) : ")
         if not cam_pwd:
             cam_pwd = 'root'
-        time_len = input("video slice duration in sec(default : 60) : ")
-        if not time_len:
-            time_len = 60 # Default is 60 seconds.
-        else:
-            time_len = int(time_len)
+        time_len = 60 # Default is 60 seconds.
         desc = input("Description : ")
 
         cam_data = camera_data(op = enum_ipcOpCode.CONST_ADD_CAMERA_OP,
