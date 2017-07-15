@@ -143,7 +143,7 @@ class db_manager():
             self.nv_log_handler.error("Can't create webserver record, "
                                       "DB session is not initialized")
             return
-        if self.nv_webserver is not None:
+        if self.get_webserver_record() is not None:
             self.nv_log_handler.error("Cannot create multiple webserver for"
                                     "same machine")
             return
