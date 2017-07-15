@@ -34,6 +34,7 @@ class nv_midbox_conf():
         try:
             self.nv_relay_mgr = relay_main()
             self.nv_relay_mgr.process_relay()
+            self.midbox_camera_init()
             self.nv_midbox_cli = nv_middlebox_cli()
             self.nv_midbox_cli.start()
         except:
@@ -41,6 +42,41 @@ class nv_midbox_conf():
                                       " the middlebox")
             self.exit_all_threads()
 
+    def midbox_camera_init(self):
+        '''
+        When starting middlebox at first time, validate all camera states,
+        set them to OFF state unconditionally. start the live stream for each
+         ** DO NOT INVOKE THE FUNCTION OTHER THAN AT THE TIME OF INIT **
+        '''
+        cam_records = db_mgr_obj.get_tbl_records(nv_camera)
+        for camera in cam_records:
+            camera.status = enum_camStatus.CONST_CAMERA_READY
+            camera.live_url = None
+        db_mgr_obj.db_commit()
+        # start the live stream for all the configured cameras
+        for camera in cam_records:
+            if not camera.name:
+                self.nv_log_handler.error("Cannot start live stream for"
+                                          " non-existent camera")
+                continue
+            try:
+                live_obj = camera_data(
+                            op = enum_ipcOpCode.CONST_START_CAMERA_STREAM_OP,
+                            name = camera.name,
+                            # Everything else can be None
+                            status = None,
+                            ip = None,
+                            macAddr = None,
+                            port = None,
+                            time_len = None,
+                            uname = None,
+                            pwd = None,
+                            desc = None
+                            )
+                self.nv_midbox_start_livestream(live_obj)
+            except:
+                self.nv_log_handler.error("Failed to start live stream of %s",
+                                      camera.name)
 
     def nv_midbox_allCam_status_update(self, status):
         '''
