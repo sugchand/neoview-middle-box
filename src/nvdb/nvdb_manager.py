@@ -89,13 +89,8 @@ class nv_camera(db_base):
     username = Column(String, nullable = False)
     password = Column(String, nullable = False)
     live_url = Column(String, default=None, nullable = True)
-    src_protocol = Column(Integer, default = 554)
-    # Number of streaming files
-    stream_file_cnt = Column(Integer, default = 0)
     # The size of each stream file in seconds, default is 60 seconds
     stream_file_time_sec = Column(Integer, default = 60)
-    #Number of active connections to the camera.
-    active_conn = Column(Integer,  default = 0)
     nv_midbox_id = Column(Integer,  ForeignKey('nv_midbox.sys_id'))
     nv_midbox = relationship(nv_midbox_system,
                             backref=backref('nv_cameras',
@@ -103,15 +98,15 @@ class nv_camera(db_base):
                                             cascade='delete,all'))
 
     def __repr__(self):
-        return "<nv_camera(cam_id=%d name='%s', ip_addr='%d', mac_addr='%s') \
-                listen_port=%d, username=%s, password=%s, src_protocol=%d, \
-                stream_file_cnt=%d, stream_file_time_sec=%d, \
-                active_conn=%d, nv_midbox_id=%d), status = %d, \
-                desc = %s live_url = %s>" % (self.cam_id, self.name, \
+        return "<nv_camera(cam_id=%d name='%s', ip_addr='%d', mac_addr='%s')"\
+                " listen_port=%d, username=%s, password=%s, "\
+                "stream_file_time_sec=%d,"\
+                "nv_midbox_id=%d), status = %d,"\
+                " desc = %s live_url = %s>" % (self.cam_id, self.name, \
                 self.ip_addr, self.mac_addr, self.listen_port, \
-                self.username, self.password, self.src_protocol, \
-                self.stream_file_cnt, self.stream_file_time_sec, \
-                self.active_conn, self.nv_midbox_id, \
+                self.username, self.password, \
+                self.stream_file_time_sec, \
+                self.nv_midbox_id, \
                 self.status, self.desc, self.live_url)
 
 
