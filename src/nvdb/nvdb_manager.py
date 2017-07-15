@@ -255,8 +255,6 @@ class db_manager():
         a name the kwargs will be
         kwargs = {'name' : 'sugu'}
         '''
-        self.nv_log_handler.debug("Collect records using filter %s"
-                                  % ' '.join(list(kwargs)))
         return self.db_session.query(table_name).filter_by(**kwargs).all()
 
     def get_tbl_records_filterby_first(self, table_name, kwargs):
@@ -266,8 +264,6 @@ class db_manager():
         kwargs = {'name' : 'sugu'}
         table_name : the table class name, just pass the class name as is.
         '''
-        self.nv_log_handler.debug("Collect records using filter %s"
-                                  % ' '.join(list(kwargs)))
         return self.db_session.query(table_name).filter_by(**kwargs).first()
 
     def get_tbl_records_filterby_cnt(self, table_name, kwargs):
