@@ -131,6 +131,19 @@ class nv_linux_lib():
             self.nv_log_handler.error("Failed to run bash command %s", e)
             raise e
 
+    def wait_cmd_complete(self, process_obj):
+        '''
+        Wait on a bg process that created by ' execute_cmd_bg ' .
+        '''
+        if not process_obj:
+            self.nv_log_handler.error("Cannot wait on empty process obj")
+            return
+        try:
+            process_obj.communicate()
+        except Exception as e:
+            self.nv_log_handler.error("Error on waiting on process obj %s", e)
+            raise e
+
     def kill_process(self, process_obj):
         '''
         Kill the process that created by the subprocess popen. It is necessary
@@ -455,6 +468,11 @@ class nv_os_lib():
         if self.context is None:
             self.nv_log_handler.error("Platform not defined.")
         return self.context.execute_cmd_bg(cmd, args)
+
+    def wait_cmd_complete(self, process_obj):
+        if self.context is None:
+            self.nv_log_handler.error("Platform not defined")
+        return self.context.wait_cmd_complete(process_obj)
 
     def kill_process(self, process_obj):
         if self.context is None:

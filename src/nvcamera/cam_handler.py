@@ -48,6 +48,7 @@ class cam_handler():
         self.nv_log_handler.debug("Initialized the camera handler.")
         self.cam_thread_obj = None
         self.cam_stream_stop_event = Event()
+        self.vlc_thread = None
 
     def save_camera_stream_in_multifile(self, stop_event):
         cam_src_path = ["rtsp://" + self.username + ":" + self.pwd + "@" +\
@@ -73,7 +74,8 @@ class cam_handler():
                     time.strftime("%d-%b-%Y:%H-%M-%S", time.gmtime()) + ".mp4"
             vlc_args = vlc_out_opts + [":sout=#file{dst=" + out_file + "}"]
             self.nv_log_handler.debug("Streaming  to a file %s" %str(vlc_args))
-            self.os_context.execute_cmd("cvlc", vlc_args)
+            self.vlc_thread = self.os_context.execute_cmd_bg("cvlc", vlc_args)
+            self.os_context.wait_cmd_complete(self.vlc_thread)
         # Delete the last file as it may be not safe to share.
         self.nv_log_handler.debug("delete last video snip %s before exiting,",
                                   out_file)
