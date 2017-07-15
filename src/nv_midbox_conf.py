@@ -53,6 +53,8 @@ class nv_midbox_conf():
             camera.status = enum_camStatus.CONST_CAMERA_READY
             camera.live_url = None
         db_mgr_obj.db_commit()
+        # Populate the webserver if configured.
+        db_mgr_obj.get_webserver_record()
         # start the live stream for all the configured cameras
         for camera in cam_records:
             if not camera.name:
