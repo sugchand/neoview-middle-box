@@ -59,8 +59,9 @@ class nv_cam_liveview():
             self.nv_log_handler.error("ffmpeg is not installed, cannot live-stream")
             return None
         port_num = str(self.os_context.get_free_listen_port())
-        vlc_args = vlc_out_opts + [":sout=#transcode{vcodec=theo,vb=200,fps=5,"
-                                   "scale=0.25,acodec=none}:http{mux=ogg,dst=:"
+        vlc_args = vlc_out_opts + [":sout=#transcode{vcodec=theo,vb=250,fps=20,"
+                                   "scale=0.25,acodec=none,threads=4}:"
+                                   "http{mux=ogg,dst=:"
                                    + port_num + "/" + str(self.cam_id) + "}",
                                    "--no-sout-audio" ]
         try:
