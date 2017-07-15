@@ -19,13 +19,6 @@ from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
 from src.nvdb.nvdb_manager import enum_camStatus
 
 class cam_handler():
-    #Stream count used to specify the current file to stream out.
-    curr_stream_cnt = 0
-    out_file_prefix = ""
-    vlc_instance = None
-    player_obj = None
-    tot_out_file_cnt = 0
-    time_lapse = 0
 
     '''
     Each camera had a camera handler instance to stream and store the video file
