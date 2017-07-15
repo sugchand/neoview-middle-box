@@ -26,10 +26,8 @@ class cam_handler():
     '''
     def __init__(self, cam_tbl_entry=None):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
-        self.tot_out_file_cnt = cam_tbl_entry.stream_file_cnt
         self.time_lapse = cam_tbl_entry.stream_file_time_sec
-        
-        self.curr_stream_cnt = 0
+
         self.cam_id = str(cam_tbl_entry.cam_id)
         self.name = cam_tbl_entry.name
         self.cam_dir = self.name
@@ -38,7 +36,8 @@ class cam_handler():
         self.cam_ip = str(ipaddress.IPv4Address(cam_tbl_entry.ip_addr))
         self.cam_listen_port = str(cam_tbl_entry.listen_port)
         self.os_context = nv_os_lib()
-        self.nv_log_handler.debug("Initialized the camera handler.")
+        self.nv_log_handler.debug("Initialized the camera handler for %s.",
+                                  self.name)
         self.cam_thread_obj = None
         self.cam_stream_stop_event = Event()
         self.vlc_thread = None
