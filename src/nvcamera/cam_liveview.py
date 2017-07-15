@@ -11,6 +11,10 @@ from src.nv_logger import nv_logger
 from src.nv_lib.nv_os_lib import nv_os_lib
 from src.nv_lib.ipc_data_obj import enum_ipcOpCode, camera_data
 from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
+from src.nvdb.nvdb_manager import nv_camera
+from src.nvdb.nvdb_manager import db_mgr_obj
+from src.nvdb.nvdb_manager import enum_camStatus
+
 import ipaddress
 from threading import Thread
 from threading import Event
@@ -39,8 +43,12 @@ class nv_cam_liveview():
         self.live_thread_cmd = None
         self.live_cam_thread = None
         self.cam_live_stop_event = Event()
-        self.stream_len_sec = cam_tbl_entry.stream_file_time_sec
-        self.live_stream_timeout = self.stream_len_sec * 3
+        # Do not modify the value in methods
+        self.const_stream_len_sec = cam_tbl_entry.stream_file_time_sec
+        # Do not modify this value in any of methods
+        self.const_live_stream_timeout = self.const_stream_len_sec * 4
+        self.stream_state = cam_tbl_entry.status
+        self.state_chk_timeout = self.const_stream_len_sec
 
     def do_live_preview(self):
         '''
@@ -137,6 +145,44 @@ class nv_cam_liveview():
         finally:
             return new_liveUrl
 
+    def stream_state_changed(self):
+        '''
+        Check if the state of camera streaming changed.
+        Only valid states are considered, which are ON, OFF.
+        Doesnt consider DISCONNECTED and DISABLED states are valid.
+        @return: True : If state of streaming changed and new state is valid.
+                 False : Either the state is not changed/currently not in valid
+                         state.
+        '''
+        if self.state_chk_timeout:
+            '''
+            No need to do the camera status check in the loop.
+            Validate only on the timeout. The purpose of this is to avoid
+            unnecessary DB read for the validation.
+            '''
+            self.state_chk_timeout -= 1
+            return False
+
+        self.state_chk_timeout = self.const_stream_len_sec
+        filter_arg = {'name' : self.cam_name}
+        cam_record = None
+        try:
+            cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera,
+                                                                   filter_arg)
+        except:
+            return False
+        if cam_record is None:
+            self.nv_log_handler.error("Empty camera record for %s, Cannot read",
+                                      self.cam_name)
+            return False
+        if cam_record.status is not enum_camStatus.CONST_CAMERA_READY and \
+                cam_record.status is not enum_camStatus.CONST_CAMERA_RECORDING:
+            return False
+        if cam_record.status is self.stream_state:
+            return False
+        self.stream_state = cam_record.status
+        return True
+
     def start_live_preview__(self, stop_event):
         '''
         (Class internal function)
@@ -165,10 +211,9 @@ class nv_cam_liveview():
         # no way liveview thread can detect those issues. Once the connection
         # is lost liveview thread becomes rogue and it cannot reconnect again
         # when camera become live.
-        # As a fix liveview thread teardown connection to camera for
-        # every 3 * stream_filelen. And create a new connection. This allows the
-        # live view is stopped indefinitly for a camera.
-        if self.stream_len_sec <= 0:
+        # As a fix liveview thread teardown connection when connection lost.
+        # This allows the live view is not disturbed by connectivity issues
+        if self.const_stream_len_sec <= 0:
             self.nv_log_handler.error("stream length in seconds is not valid,"
                                       " cannot run the live view thread")
             try:
@@ -193,19 +238,22 @@ class nv_cam_liveview():
             try:
                 # Validate the camera reachability.
                 if not self.is_camera_reachable():
-                    timeout = self.live_stream_timeout
+                    timeout = self.const_live_stream_timeout
                     cam_conn_ok = False
                     continue
-                # Camera is reachable, but need to check if connection is OK
-                if cam_conn_ok:
-                    continue
-                # Have camera connectivity, but connection lost before. so
-                # reconnect
-                new_liveUrl = self.restart_live_stream()
-                cam_conn_ok = True
-                self.live_url = new_liveUrl
-                self.update_livestream_in_DB(new_liveUrl = new_liveUrl)
+                # Vlc lib is not very stable to process the streaming for long
+                # time. Sometime it hangs due to unknown issues. There is no
+                # way liveview can detect it. As a fix, liveview is restarted
+                # for every camera streaming switch status change.
+                if self.stream_state_changed() or not cam_conn_ok:
+                    # Have camera connectivity, but connection lost before. so
+                    # reconnect
+                    new_liveUrl = self.restart_live_stream()
+                    cam_conn_ok = True
+                    self.live_url = new_liveUrl
+                    self.update_livestream_in_DB(new_liveUrl = new_liveUrl)
             except Exception as e:
+                self.nv_log_handler.error("%s error in restarting the live", e)
                 self.stop_live_preview__()
 
         # stop the thread as the live view is stopped by thread manager.
