@@ -3,6 +3,7 @@
 # The database manager module for nv-middlebox.
 #
 # Use this file to interact with DB.
+from sqlalchemy.orm.scoping import scoped_session
 
 __author__ = "Sugesh Chandran"
 __copyright__ = "Copyright (C) The neoview team."
@@ -117,9 +118,6 @@ class db_manager():
     multithreaded implementation, its responsibility of caller to take care of
     it.
     '''
-    db_engine = None
-    db_session_cls = None #Session Maker factory class
-    db_session = None
 
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
@@ -127,7 +125,8 @@ class db_manager():
                                     connect_args={'check_same_thread': False},
                                     poolclass=StaticPool, echo=False)
         session_maker = sessionmaker(bind=self.db_engine)
-        self.db_session_cls = session_maker()
+        self.Session = scoped_session(session_maker)
+        self.db_session = None
         db_base.metadata.create_all(self.db_engine)
         self.nv_midbox_db_entry = None
         self.nv_webserver = None
@@ -136,7 +135,7 @@ class db_manager():
     def setup_session(self):
         if self.db_session is None:
             self.nv_log_handler.debug("NULL db session, create a new one..")
-            self.db_session = self.db_session_cls
+            self.db_session = self.Session()
 
     def init_webserver_params(self, webserver_db_entry):
         if self.db_session is None:
