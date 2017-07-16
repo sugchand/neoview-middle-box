@@ -137,6 +137,15 @@ class db_manager():
             self.nv_log_handler.debug("NULL db session, create a new one..")
             self.db_session = self.Session()
 
+    def teardown_session(self):
+        if self.db_session is None:
+            self.nv_log_handler.error("Cannot teardown empty session")
+            return
+        try:
+            self.Session.remove()
+        except Exception as e:
+            self.nv_log_handler.error("Failed to teardown DB session %s", e)
+
     def init_webserver_params(self, webserver_db_entry):
         if self.db_session is None:
             self.nv_log_handler.error("Can't create webserver record, "

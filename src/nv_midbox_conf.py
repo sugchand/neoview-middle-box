@@ -107,7 +107,7 @@ class nv_midbox_conf():
     def exit_all_threads(self):
         '''
         Function to stop all the threads that are started by the midbox conf.
-        cli, relay manager and all camera threads are stopped.
+        cli, relay manager live and all camera threads are stopped.
         '''
         self.nv_midbox_cli.stop()
         self.nv_relay_mgr.relay_stop()
@@ -120,6 +120,7 @@ class nv_midbox_conf():
         self.cam_thread_mgr.join_all_camera_threads()
         #Set camera thread to ready before exiting..
         self.nv_midbox_allCam_status_update(enum_camStatus.CONST_CAMERA_READY)
+        db_mgr_obj.teardown_session()
 
     def do_midbox_conf(self):
         '''
