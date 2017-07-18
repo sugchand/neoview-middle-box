@@ -115,7 +115,7 @@ class nv_midbox_conf():
         self.nv_midbox_allCam_status_update(enum_camStatus.CONST_CAMERA_DEFERRED)
         # Stop all the live streaming threads.
         self.cam_thread_mgr.stop_all_camlive()
-        self.cam_thread_mgr.stop_all_camera_threads()
+        self.cam_thread_mgr.kill_all_camera_threads()
         self.nv_relay_mgr.relay_join()
         self.cam_thread_mgr.join_all_camera_threads()
         #Set camera thread to ready before exiting..
@@ -357,6 +357,30 @@ class nv_midbox_conf():
         db_mgr_obj.db_commit()
         self.nv_log_handler.debug("Stop streaming on camera %s" %cam_name)
         GBL_WSCLIENT.send_notify()
+
+    def nv_midbox_kill_stream(self, cam_obj):
+        '''
+        Kill the camera streaming forcefully. Can be used while closing
+        middlebox and deleting the camera from the middlebox
+        '''
+        cam_name = cam_obj.name
+        filter_arg = {'name' : cam_name}
+        cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera, filter_arg)
+        if cam_record is None:
+            self.nv_log_handler.error("No camera record found for %s"
+                                      " to kill", cam_name)
+            return
+        try:
+            self.cam_thread_mgr.kill_camera_thread(cam_id = cam_record.cam_id,
+                                                   cam_obj = None)
+            cam_record.status = enum_camStatus.CONST_CAMERA_READY
+            db_mgr_obj.db_commit()
+            self.nv_log_handler.debug("Killed streaming thread for camera %s",
+                                      cam_name)
+            GBL_WSCLIENT.send_notify()
+        except Exception as e:
+            self.nv_log_handler.error("Failed to kill the camera streaming %s",
+                                      e)
 
     def _is_nv_midbox_cam_status_update_valid(self, old_state, new_state):
         '''

@@ -91,6 +91,33 @@ class thread_manager():
                                       "with exception %s", cam_id, str(e))
             raise e
 
+    def kill_camera_thread(self, cam_id, cam_obj=None):
+        if cam_obj is None:
+            cam_obj = self.cam_thread_dic.get(cam_id)
+        if not cam_obj:
+            self.nv_log_handler.info("Camera thread not exist to kill"
+                                     " camera-id :%d", cam_id)
+            return
+        try:
+            cam_obj.kill_camera_thread()
+            self.join_cam_thread_dic[cam_id] = self.cam_thread_dic[cam_id]
+            self.cam_thread_dic[cam_id] = None
+            self.nv_log_handler.debug("The camera handler thread is killed for"
+                                      " camera-id : %d", cam_id)
+        except Exception as e:
+            self.nv_log_handler.error("Failed to kill the camera thread for"
+                                      " camera-id %d", cam_id)
+            raise e
+
+    def kill_all_camera_threads(self):
+        self.cleanup_camera_dic()
+        for cam_id, cam_obj in self.cam_thread_dic.items():
+            self.kill_camera_thread(cam_id = cam_id, cam_obj = cam_obj)
+
+        #Join the camera threads that are closed.
+        for cam_id, cam_obj in self.join_cam_thread_dic.items():
+            self.join_camera_thread(cam_id = cam_id, cam_obj = cam_obj)
+
     def stop_all_camera_threads(self):
         # Destroy all the threads that created by the thread manager.
         for cam_id, cam_obj in self.cam_thread_dic.items():

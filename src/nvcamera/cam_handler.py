@@ -113,6 +113,17 @@ class cam_handler():
         '''
         self.cam_stream_stop_event.set()
 
+    def kill_camera_thread(self):
+        '''
+        Kill the camera thread in the emergency event.
+        '''
+        self.cam_stream_stop_event.set()
+        try:
+            self.os_context.kill_process(self.vlc_thread)
+        except Exception as e:
+            self.nv_log_handler.error("Failed to kill the vlc thread in force"
+                                      "%s", e)
+
     def join_camera_thread(self):
         '''
         Wait for camera streamer thread to join in the main thread.
