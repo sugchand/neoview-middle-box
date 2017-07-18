@@ -275,7 +275,7 @@ class nv_midbox_conf():
             GBL_WSCLIENT.send_notify()
 
     def nv_midbox_del_camera(self, cam_obj):
-        self.nv_midbox_stop_stream(cam_obj)
+        self.nv_midbox_kill_stream(cam_obj)
         cam_name = cam_obj.name
         filter_arg = {'name' : cam_name}
 
