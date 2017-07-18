@@ -61,6 +61,10 @@ class thread_manager():
                               self.cam_thread_dic.items() if cam_obj)
         self.join_cam_thread_dic = dict((cam_id, cam_obj) for cam_id, cam_obj in \
                                    self.join_cam_thread_dic.items() if cam_obj)
+        self.cam_live_threads = dict((cam_id, cam_obj) for cam_id, cam_obj in \
+                                   self.cam_live_threads.items() if cam_obj)
+        self.join_cam_live_threads = dict((cam_id, cam_obj) for cam_id, cam_obj in \
+                                   self.join_cam_live_threads.items() if cam_obj)
 
     def stop_camera_thread(self, cam_id, cam_obj = None):
         # Do a cleanup to remove all rogue data before stopping the threads.
@@ -90,20 +94,14 @@ class thread_manager():
     def stop_all_camera_threads(self):
         # Destroy all the threads that created by the thread manager.
         for cam_id, cam_obj in self.cam_thread_dic.items():
-            self.stop_camera_thread_(cam_id, cam_obj)
-
-    def start_all_camera_threads(self):
-        # Read camera DB for each camera entry.
-        # create handler thread for each entry and store it in the thread list.
-        # function get called while initilizing.
-        pass
+            self.stop_camera_thread(cam_id, cam_obj)
 
     def join_camera_thread(self, cam_id, cam_obj):
         if cam_obj is None:
             cam_obj = self.join_cam_thread_dic[cam_id]
         if not cam_obj:
             self.nv_log_handler.debug("The camera handler thread doesnt exists"
-                                      "%d" % cam_id)
+                                      " to join cam-id : %d" % cam_id)
             return
         try:
             cam_obj.join_camera_thread()
@@ -111,6 +109,8 @@ class thread_manager():
         except:
             self.nv_log_handler.error("Failed to join the camera thread %d"
                                       % cam_id)
+        finally:
+            self.cleanup_camera_dic()
 
     def join_all_camera_threads(self):
         try:
