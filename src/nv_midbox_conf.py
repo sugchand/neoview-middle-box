@@ -304,6 +304,7 @@ class nv_midbox_conf():
             cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera,
                                                                    filter_arg)
             db_mgr_obj.delete_record(cam_record)
+            db_mgr_obj.db_commit()
         except:
             self.nv_log_handler.error("Failed to delete the camera %s",
                                       cam_obj.name)

@@ -228,6 +228,7 @@ class db_manager():
         '''
         for row in self.db_session.query(table_name).all():
             self.db_session.delete(row)
+        self.db_commit()
         self.nv_log_handler.debug("Cleaning the table %s", table_name.__name__)
 
     def get_tbl_record_cnt(self, table_name):
