@@ -22,6 +22,9 @@ from src.nv_lib.ipc_data_obj import camera_data,enum_ipcOpCode
 from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
 from src.nvdb.nvdb_manager import enum_camStatus
 from src.nv_lib.nv_os_lib import nv_os_lib
+from src.settings import NV_MIDBOX_PAGE_HTTP_PORT
+from src.settings import NV_MIDBOX_HTTP_WS_PORT
+from src.settings import NV_MIDBOX_HTTPS_WS_PORT
 import ssl
 import os
 
@@ -225,9 +228,31 @@ class ServerIndexPageHandler(tornado.web.RequestHandler):
 
 class WSApplication(tornado.web.Application):
 
+    '''
+    HTTPS websocket application to communicate with applications from outside.
+    The streaming webserver uses this socket to interact with middlebox.
+    '''
     def __init__(self):
         handlers = [
             (r'/userwebsocket', UserWebSocketHandler),
+            (r"/static/(.*)",tornado.web.StaticFileHandler, {"path": "./static"},)
+        ]
+        settings = {
+            'debug' : True,
+            "static_path": "src/nv_midbox_websock/templates/static",
+            'template_path': 'src/nv_midbox_websock/templates'
+        }
+        tornado.web.Application.__init__(self, handlers, **settings)
+
+class WS_HTTP_Application(tornado.web.Application):
+    '''
+    HTTP websocket application to communicate with middlebox inside the local
+    network. The local webclient, the switch page uses this application handle
+    to interact with middlebox
+    '''
+    def __init__(self):
+        handlers = [
+            (r'/HTTPUserwebsocket', UserWebSocketHandler),
             (r"/static/(.*)",tornado.web.StaticFileHandler, {"path": "./static"},)
         ]
         settings = {
@@ -263,6 +288,7 @@ class nv_midbox_ws(threading.Thread):
         try:
             ws_app = WSApplication()
             page_app = SwitchApplication()
+            http_ws_app = WS_HTTP_Application()
             cert_file = os.getcwd() + "/ssl_data/nvmidbox.cert"
             key_file = os.getcwd() + "/ssl_data/nvmidbox.key"
 
@@ -275,12 +301,19 @@ class nv_midbox_ws(threading.Thread):
                                                     ssl_options=ssl_ctx)
             else:
                 # ssl data is missing, so start webserver in http mode.
-                self.nv_log_handler.info("Starting midbox HTTP server..")
-                server = tornado.httpserver.HTTPServer(ws_app)
+                self.nv_log_handler.error("SSL files are missing, cannot"
+                                           " start websocket server.")
+                self.nv_log_handler.error("Exiting the Middlebox webserver")
+                return
+
             # The server for switch page.
             page_server = tornado.httpserver.HTTPServer(page_app)
-            page_server.listen(9000)
-            server.listen(8080)
+            page_server.listen(NV_MIDBOX_PAGE_HTTP_PORT)
+            server.listen(NV_MIDBOX_HTTPS_WS_PORT)
+
+            # WS server for local connections.
+            http_ws_server = tornado.httpserver.HTTPServer(http_ws_app)
+            http_ws_server.listen(NV_MIDBOX_HTTP_WS_PORT)
             tornado.ioloop.IOLoop.instance().start()
         except Exception as e:
             self.nv_log_handler.error("Unknown error while starting"

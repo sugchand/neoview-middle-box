@@ -12,6 +12,7 @@ import uuid
 import json
 import ssl
 from src.nv_logger import nv_logger
+from src.settings import NV_MIDBOX_HTTP_WS_PORT
 
 class ws_token():
     '''
@@ -42,7 +43,8 @@ class midbox_wsClient():
     Class to send websocket messages to the webserver. The middlebox uses
     this class to update webserver about the system changes
     '''
-    ws_path = 'wss://localhost:8080/userwebsocket'
+    ws_path = 'ws://localhost:' + str(NV_MIDBOX_HTTP_WS_PORT) +\
+                '/HTTPUserwebsocket'
     def __init__(self):
         self.ws_key = ws_token()
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()

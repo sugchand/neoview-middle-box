@@ -47,3 +47,20 @@ NVDB_DEFAULT_LOG_LEVEL = logging.DEBUG
 #NVDB_LOG_FILE = "/usr/local/var/log/nv-middlebox/nvdb.log"
 NVDB_LOG_FILE = "/tmp/nvdb.log"
 NVDB_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+
+# MIDDLEBOX WEBSERVER SETTINGS.
+## Middlebox http server port.
+## DO NOT EXPOSE THIS PORT ON EXTERNAL NETWORK.
+NV_MIDBOX_PAGE_HTTP_PORT=9000
+
+## Middlebox https server port for websocket.
+## All the external websocket connections(such as connection from stream web
+## server) should be through this port.
+## THIS PORT ONLY EXPOSED TO EXTERNAL NETWORK.
+NV_MIDBOX_HTTPS_WS_PORT=8080
+
+## Middlebox http server port for websocket.
+## All the internal websocket connections(such as connection from switch page)
+## should use this port for the communication. NEVER EXPOSE THIS PORT TO
+## EXTERNAL NETWORK.
+NV_MIDBOX_HTTP_WS_PORT=9090
