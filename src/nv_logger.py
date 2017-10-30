@@ -10,7 +10,8 @@ __version__ = "1.0"
 
 import logging
 from src.settings import NV_DEFAULT_LOG_LEVEL, NV_LOG_FILE, NV_LOG_FORMAT, \
-                    NVDB_LOG_FORMAT, NVDB_DEFAULT_LOG_LEVEL, NVDB_LOG_FILE
+                    NVDB_LOG_FORMAT, NVDB_DEFAULT_LOG_LEVEL, NVDB_LOG_FILE, \
+                    NV_CONSOLE_LOG
 
 class nv_logger():
     '''
@@ -27,11 +28,10 @@ class nv_logger():
         log_fh.setLevel(NV_DEFAULT_LOG_LEVEL)
         log_fh.setFormatter(log_format)
         self.nv_log_obj.addHandler(log_fh)
+        # Propogate the log to the upper layer , i.e stdout
+        self.nv_log_obj.propagate = NV_CONSOLE_LOG
 
-        #log_ch = logging.StreamHandler()
-        #log_ch.setLevel(NV_DEFAULT_LOG_LEVEL)
-        #log_ch.setFormatter(log_format)
-        #self.nv_log_obj.addHandler(log_ch)
+
 
     def get_logger(self):
         return self.nv_log_obj
@@ -47,11 +47,6 @@ class nvdb_logger():
         nvdb_log_fh.setLevel(NVDB_DEFAULT_LOG_LEVEL)
         nvdb_log_fh.setFormatter(nvdb_log_format)
         self.nvdb_log_obj.addHandler(nvdb_log_fh)
-
-        #nvdb_log_ch = logging.StreamHandler()
-        #nvdb_log_ch.setLevel(NVDB_DEFAULT_LOG_LEVEL)
-        #nvdb_log_ch.setFormatter(nvdb_log_format)
-        #self.nvdb_log_obj.addHandler(nvdb_log_ch)
 
     def get_logger(self):
         return self.nvdb_log_obj

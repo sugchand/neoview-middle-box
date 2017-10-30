@@ -31,9 +31,10 @@ NV_CAM_CONN_TIMEOUT = 300  # 300 sec/5 min
 
 # nv-middle-box logging Settings
 NV_DEFAULT_LOG_LEVEL = logging.DEBUG
-#NV_LOG_FILE = "/usr/local/var/log/nv-middlebox/nv_middlebox.log"
 NV_LOG_FILE = "/tmp/nv_middlebox.log"
-NV_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
+NV_LOG_FORMAT = "%(asctime)s - %(levelname)s - %(name)s - %(funcName)s - %(message)s"
+# Set to 'True'/'False' to enable/disable console logging.By default its 'False'
+NV_CONSOLE_LOG = False
 
 
 #nv-middlebox db settings
