@@ -10,6 +10,7 @@ __version__ = "1.0"
 import platform
 import sys
 import os
+import psutil
 
 curr_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.abspath(os.path.join(curr_dir, os.pardir)))
@@ -48,6 +49,16 @@ if __name__ == "__main__":
         default_nv_log_handler.error("Neoview Middlebox works only on Linux " +
                                      "platform")
         exit(1)
+    # Dont let multiple middlebox instance to run on same machine.
+    nvmidbox_pid = os.getpid()
+    for p in psutil.process_iter():
+        if 'nv_middlebox' in p.name():
+            if nvmidbox_pid == p.pid:
+                # Pid of the curent process, skip it.
+                continue
+            default_nv_log_handler.error("Neoview middlebox process is"
+                                         " running already in the system...")
+            exit(1)
     nv_mid_obj = nv_middlebox()
     try:
         nv_mid_obj.run()
