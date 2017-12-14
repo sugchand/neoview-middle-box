@@ -11,6 +11,8 @@ __license__ = "GNU Lesser General Public License"
 __version__ = "1.0"
 
 import uuid
+import socket
+import struct
 from sqlalchemy import create_engine
 from sqlalchemy import Column, DateTime, String, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
@@ -46,9 +48,10 @@ class nv_webserver_system(db_base):
     pwd = Column(String, nullable = False, default = 'root')
 
     def __repr__(self):
-        return "<nv_webserver(server_id=%d), name = %s, dst_path = %s,"\
-               "uname = %s>" % \
-                (self.sys_id, self.name, self.video_path, self.uname)
+        return "<nv_webserver(server_id=%d, name = %s, dst_path = %s,"\
+               "uname = %s, pwd = %s)>" % \
+                (self.server_id, self.name, self.video_path, self.uname, \
+                 self.pwd)
 
 class enum_camStatus():
     '''
@@ -99,12 +102,13 @@ class nv_camera(db_base):
                                             cascade='delete,all'))
 
     def __repr__(self):
-        return "<nv_camera(cam_id=%d name='%s', ip_addr='%d', mac_addr='%s')"\
-                " listen_port=%d, username=%s, password=%s, "\
+        return "<nv_camera(cam_id=%d name='%s', ip_addr='%s', mac_addr='%s',"\
+                " listen_port=%d, username=%s, password='%s', "\
                 "stream_file_time_sec=%d,"\
-                "nv_midbox_id=%d), status = %d,"\
-                " desc = %s live_url = %s>" % (self.cam_id, self.name, \
-                self.ip_addr, self.mac_addr, self.listen_port, \
+                "nv_midbox_id=%d, status = %d,"\
+                " desc = '%s' ,live_url = '%s')>" % (self.cam_id, self.name, \
+                socket.inet_ntoa(struct.pack('!L', self.ip_addr)), \
+                self.mac_addr, self.listen_port, \
                 self.username, self.password, \
                 self.stream_file_time_sec, \
                 self.nv_midbox_id, \
