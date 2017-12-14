@@ -106,7 +106,7 @@ class nv_camera(db_base):
                 " listen_port=%d, username=%s, password='%s', "\
                 "stream_file_time_sec=%d,"\
                 "nv_midbox_id=%d, status = %d,"\
-                " desc = '%s' ,live_url = '%s')>" % (self.cam_id, self.name, \
+                " desc = '%s' ,live_url = '%s')>\n" % (self.cam_id, self.name, \
                 socket.inet_ntoa(struct.pack('!L', self.ip_addr)), \
                 self.mac_addr, self.listen_port, \
                 self.username, self.password, \
