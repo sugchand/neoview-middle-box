@@ -12,7 +12,8 @@ import ipaddress
 from getpass import getpass
 
 from src.nv_logger import nv_logger
-from src.nvdb.nvdb_manager import db_mgr_obj, nv_midbox_system, enum_camStatus
+from src.nvdb.nvdb_manager import db_mgr_obj, nv_midbox_system, enum_camStatus,\
+    nv_webserver_system
 from src.nvdb.nvdb_manager import nv_camera
 from src.nv_lib.ipc_data_obj import webserver_data, exitSys_data,camera_data, enum_ipcOpCode
 from src.nv_lib.nv_sync_lib import GBL_CONF_QUEUE
@@ -38,7 +39,7 @@ NV_MIDBOX_CLI_FNS = {
                     }
 
 def print_color_string(s, color='white'):
-    print("%s" %(colored(s, color, attrs = ['bold'])))
+    print("\n%s" %(colored(s, color, attrs = ['bold'])))
 
 class nv_middlebox_cli(threading.Thread):
     '''
@@ -102,7 +103,7 @@ class nv_middlebox_cli(threading.Thread):
                 raise
 
     def add_nv_webserver(self):
-        srv_name = input("Enter webserver Name(dafult = localhost) : ")
+        srv_name = input("Enter webserver Name/IP(dafult = localhost) : ")
         uname = 'root'
         pwd = 'root'
         if not srv_name or srv_name is 'localhost' or srv_name is '127.0.0.1':
@@ -324,13 +325,18 @@ class nv_middlebox_cli(threading.Thread):
                                           " %s", e)
 
     def list_midbox_system(self):
+        self.nv_log_handler.debug("Listing system & webserver details from DB")
         if not db_mgr_obj.get_tbl_record_cnt(nv_midbox_system):
             print_color_string("No record found in system table", color='red')
             self.nv_log_handler.debug("Empty system table in the DB")
             return
         sys_record = db_mgr_obj.get_tbl_records(nv_midbox_system)
         print_color_string(sys_record, color = "green")
-        self.nv_log_handler.debug("Listing system details the DB")
+        if not db_mgr_obj.get_tbl_record_cnt(nv_webserver_system):
+            self.nv_log_handler.debug("Empty webserver table in the system")
+            return
+        web_records = db_mgr_obj.get_tbl_records(nv_webserver_system)
+        print_color_string(web_records, color = "blue")
 
     def nv_midbox_list_cameras(self):
         if not db_mgr_obj.get_tbl_record_cnt(nv_camera):
