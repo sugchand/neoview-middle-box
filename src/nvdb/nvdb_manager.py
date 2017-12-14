@@ -186,6 +186,12 @@ class db_manager():
             self.nv_log_handler.error("Cannot create multiple system entries for"
                                       "same machine")
             return
+
+        self.nv_midbox_db_entry = self.get_tbl_records(table_name = \
+                                                       nv_midbox_system)
+        if self.nv_midbox_db_entry:
+            self.nv_midbox_db_entry = self.nv_midbox_db_entry[0]
+            return
         sys_id = (uuid.uuid4().int>>64) & 0xFFFFFFFF
         self.nv_midbox_db_entry = nv_midbox_system(sys_id = sys_id,
                                       name = NV_MID_BOX_APP_NAME)
