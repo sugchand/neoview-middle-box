@@ -3,7 +3,6 @@
 # The database manager module for nv-middlebox.
 #
 # Use this file to interact with DB.
-from sqlalchemy.orm.scoping import scoped_session
 
 __author__ = "Sugesh Chandran"
 __copyright__ = "Copyright (C) The neoview team."
@@ -21,6 +20,8 @@ from src.settings import NVDB_SQLALCHEMY_DB
 from src.nv_logger import nv_logger
 from src.settings import NV_MID_BOX_APP_NAME
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.orm.scoping import scoped_session
+from src.nv_lib.nv_sync_lib import GBL_NV_SYNC_OBJ
 
 db_base = declarative_base()
 
@@ -123,6 +124,7 @@ class db_manager():
     it.
     '''
 
+    DB_TRANSACT_LOCK="nvdb_transact_lock"
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.db_engine = create_engine(NVDB_SQLALCHEMY_DB,
@@ -290,6 +292,25 @@ class db_manager():
         self.nv_log_handler.debug("Collect records using filter %s"
                                   % ' '.join(list(kwargs)))
         return self.db_session.query(table_name).filter_by(**kwargs).count()
+
+    def db_start_transaction(self):
+        '''
+        Acquire the DB lock before starting any transaction on the session.
+        User can access the DB without the lock, however its good to acquire
+        the lock before the transaction to keep the DB session in safe state all
+        the time.
+        '''
+        GBL_NV_SYNC_OBJ.mutex_lock(self.DB_TRANSACT_LOCK)
+
+    def db_end_transaction(self):
+        '''
+        Release the lock after the transaction is complete. It is also essential
+        to release the lock in db session after the transaction.
+        '''
+        if GBL_NV_SYNC_OBJ.is_mutex_locked(self.DB_TRANSACT_LOCK):
+            self.nv_log_handler.info("Trying to unlock a non-existent lock")
+            return
+        GBL_NV_SYNC_OBJ.mutex_unlock(self.DB_TRANSACT_LOCK)
 
 db_mgr_obj = db_manager()
 
