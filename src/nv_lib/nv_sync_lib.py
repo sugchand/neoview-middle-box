@@ -2,6 +2,7 @@
 # -*- coding: utf8 -*-
 # The thread synchronization library.
 #
+from multiprocessing import RLock
 __author__ = "Sugesh Chandran"
 __copyright__ = "Copyright (C) The neoview team."
 __license__ = "GNU Lesser General Public License"
@@ -108,10 +109,15 @@ class nv_sync_lib():
         '''
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.mutex_dic = {}
-        self.semaphone_dic = {}
+        self.rlock_dic = {}
         pass
 
     def mutex_lock(self, name):
+        '''
+        Acquire a mutex lock with the given name. Same thread can acquire the
+        lock only once. Its necessary to release the lock after
+        the use
+        '''
         if not name in self.mutex_dic:
             # The mutex lock is not created , lets create one.
             try:
@@ -135,6 +141,31 @@ class nv_sync_lib():
                                       % name)
             return
         self.mutex_dic[name].locked()
+
+    def rlock_acquire(self, name):
+        '''
+        Acquire a rlock, caller can acquire this lock as many times it wanted to.
+        Need to release equal to number of locks.
+        '''
+        if not name in self.rlock_dic:
+            try:
+                self.rlock_dic[name] = RLock()
+            except Exception as e:
+                self.nv_log_handler.error("Failed to acquire Rlock : %s" % name)
+                del self.rlock_dic[name]
+                raise e
+        self.rlock_dic[name].acquire()
+
+    def rlock_release(self, name):
+        '''
+        Release the acquired rlock after use. If caller acquired the lock more
+        than once, it necessary to release it that many times.
+        '''
+        if not name in self.rlock_dic:
+            self.nv_log_handler.error("Cannot release a non-existent lock %s"
+                                      % name)
+            return
+        self.rlock_dic[name].release()
 
     def list_mutex_locks(self):
         '''
