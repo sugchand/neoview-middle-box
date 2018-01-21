@@ -101,7 +101,8 @@ class cam_handler():
             self.nv_log_handler.error("Cannot start streaming thread, " 
                                         "its already exists")
             return
-        self.cam_thread_obj = Thread(name=self.cam_id,
+        self.cam_thread_obj = Thread(
+                              name=self.name + str(self.cam_id) + "-stream",
                               target=self.save_camera_stream_in_multifile,
                               args = (self.cam_stream_stop_event,))
         self.cam_thread_obj.daemon = True
@@ -121,7 +122,7 @@ class cam_handler():
         try:
             self.os_context.kill_process(self.vlc_thread)
         except Exception as e:
-            self.nv_log_handler.error("Failed to kill the vlc thread in force"
+            self.nv_log_handler.info("Failed to kill the vlc thread in force"
                                       "%s", e)
 
     def join_camera_thread(self):

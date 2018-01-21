@@ -267,7 +267,8 @@ class nv_cam_liveview():
             self.nv_log_handler.error("Cannot start live-view thread, "
                                         "its already exists")
             return
-        self.live_cam_thread = Thread(name=self.cam_id,
+        self.live_cam_thread = Thread(name=self.cam_name + str(self.cam_id) +
+                                      "-live",
                               target=self.start_live_preview__,
                               args = (self.cam_live_stop_event,))
         self.live_cam_thread.daemon = True
