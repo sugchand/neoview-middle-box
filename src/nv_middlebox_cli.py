@@ -9,6 +9,8 @@ __version__ = "1.0"
 
 import threading
 import ipaddress
+import socket
+import struct
 from getpass import getpass
 
 from src.nv_logger import nv_logger
@@ -149,13 +151,72 @@ class nv_middlebox_cli(threading.Thread):
         finally:
             raise midboxExitException
 
+    def is_camera_rtsp_stream_valid(self, ip_addr, port, uname, pwd):
+        '''
+        Check to see if camera can respond for RTSP request. Returns True if
+        camera can support RTSP, False otherwise.
+        All the function parameters are string type.
+        '''
+        req = "DESCRIBE rtsp//" + uname + ":" + pwd + "@" +\
+              ip_addr + ":" + port +\
+              " RTSP/1.0\r\nCSeq: 2\r\nAuthorization: Basic YWRtaW46c3VndSZkZWVwdQ==\r\n\r\n"
+        byte_req = req.encode()
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(10)
+            s.connect((ip_addr, int(port)))
+            s.sendall(byte_req)
+            data = s.recv(200)
+            s.close()
+            data = data.decode("utf-8")
+            if "200 OK" in data:
+                return True
+        except Exception as e:
+            self.nv_log_handler.error("Failed to make rtsp connection to camera"
+                                      " : %s" % e)
+        self.nv_log_handler.info("RTSP is not supported by the camera"
+                                        "camera response : %s", data)
+        return False
+
+    def validate_cam_details(self, name, ip_addr, mac_addr, port, uname, pwd):
+        '''
+        Validate the camera details are right before configuring it.
+        Return true if all the details are right. False otherwise.
+        All the function parameters are string type.
+        '''
+        db_mgr_obj.db_start_transaction()
+        cam_records = db_mgr_obj.get_tbl_records(nv_camera)
+        db_mgr_obj.db_end_transaction()
+        for cam_record in cam_records:
+            if cam_record.name == name:
+                self.nv_log_handler.error("Cannot add camera, Duplicate name :%s"
+                                          ,name)
+                return False
+            db_ip_addr_str = socket.inet_ntoa(struct.pack('!L',
+                                              cam_record.ip_addr))
+            if db_ip_addr_str == ip_addr:
+                self.nv_log_handler.error("Cannot add camera, Duplicate IP :%s",
+                                          ip_addr)
+                return False
+            if cam_record.mac_addr == mac_addr:
+                self.nv_log_handler.error("Cannot add camera '%s' "
+                                          "duplicate mac-addr %s",
+                                          cam_record.name, mac_addr)
+                return False
+
+        if not self.is_camera_rtsp_stream_valid(ip_addr, port, uname, pwd):
+            return False
+        # Check the camera is serving the rtsp stream or not.
+        return True
+
     def nv_midbox_add_camera(self):
         cam_name = input("Camera Name(default : bed-cam) : ")
         if not cam_name:
             cam_name = 'bed-cam'
         try:
             #ipaddress will throw exception if the input ip is invalid.
-            cam_ip = int(ipaddress.IPv4Address(input("IP Address : ")))
+            cam_ip_str = input("IP Address : ")
+            cam_ip = int(ipaddress.IPv4Address(cam_ip_str))
         except:
             self.nv_log_handler.error("Invalid ip address, cannot add camera,"
                                       " try again with proper ip address")
@@ -163,11 +224,12 @@ class nv_middlebox_cli(threading.Thread):
         cam_mac = input("MAC Address(default : FF:FF:FF:FF:FF:FF) : ")
         if not cam_mac:
             cam_mac = "FF:FF:FF:FF:FF:FF"
-        cam_listen_port = input("RTSP port(default : 554) : ")
-        if not cam_listen_port:
+        cam_listen_port_str = input("RTSP port(default : 554) : ")
+        if not cam_listen_port_str:
+            cam_listen_port_str = '554'
             cam_listen_port = 554
         else:
-            cam_listen_port = int(cam_listen_port)
+            cam_listen_port = int(cam_listen_port_str)
         cam_uname = input("User name(default : root) : ")
         if not cam_uname:
             cam_uname = 'root'
@@ -177,6 +239,11 @@ class nv_middlebox_cli(threading.Thread):
         time_len = 60 # Default is 60 seconds.
         desc = input("Description : ")
 
+        if not self.validate_cam_details(cam_name, cam_ip_str, cam_mac,
+                                    cam_listen_port_str, cam_uname, cam_pwd):
+            self.nv_log_handler.error("Camera credentails are wrong, Please"
+                                      " make sure to provide proper camera details")
+            return
         cam_data = camera_data(op = enum_ipcOpCode.CONST_ADD_CAMERA_OP,
                                name = cam_name,
                                status = enum_camStatus.CONST_CAMERA_NEW,
