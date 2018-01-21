@@ -319,7 +319,8 @@ class nv_midbox_ws(threading.Thread):
             self.nv_log_handler.error("Unknown error while starting"
                                       " websocket server %s", e)
 
-    def stop(self):
-        super(nv_midbox_ws, self).stop()
+    def stop_ws(self):
+        self.nv_log_handler.info("Stopping the middlebox Web-server")
+        tornado.ioloop.IOLoop.instance().stop()
 
 GBL_WEBSOCK_POOL = websock_connectionPool()

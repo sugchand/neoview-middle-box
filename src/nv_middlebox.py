@@ -40,9 +40,11 @@ class nv_middlebox():
             self.nv_websock.start()
             self.nv_conf = nv_midbox_conf()
             self.nv_conf.do_midbox_conf()
-        except KeyboardInterrupt:
+        finally:
             if self.nv_conf:
                 self.nv_conf.exit_all_threads()
+            if self.nv_websock:
+                self.nv_websock.stop_ws()
 
 if __name__ == "__main__":
     if platform.system() != 'Linux':
