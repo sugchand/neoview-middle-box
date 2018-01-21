@@ -216,7 +216,9 @@ class nv_middlebox_cli(threading.Thread):
     def nv_midbox_start_stream(self):
         cam_name = (input("Enter Camera Name: "))
         filter_arg = {'name' : cam_name}
+        db_mgr_obj.db_start_transaction()
         cam_cnt = db_mgr_obj.get_tbl_records_filterby_cnt(nv_camera, filter_arg)
+        db_mgr_obj.db_end_transaction()
         if cam_cnt == 0:
             self.nv_log_handler.error("No record found with given name %s"
                                       % cam_name)
@@ -225,7 +227,9 @@ class nv_middlebox_cli(threading.Thread):
             self.nv_log_handler.error("Exiting, More than one record found"
                                       " with same name %s" % cam_name)
             return
+        db_mgr_obj.db_start_transaction()
         cam_record = db_mgr_obj.get_tbl_records_filterby(nv_camera, filter_arg)[0]
+        db_mgr_obj.db_end_transaction()
         # XXX :: No need to send out all the camera details to start stream,only
         # name will be enough. But nothing harm to send everything. so sending
         # out for integrity.
@@ -249,7 +253,9 @@ class nv_middlebox_cli(threading.Thread):
         '''
         Start all the available cameras in the system
         '''
+        db_mgr_obj.db_start_transaction()
         cam_records = db_mgr_obj.get_tbl_records(nv_camera)
+        db_mgr_obj.db_end_transaction()
         for cam_record in cam_records:
             cam_ipcData = camera_data(
                                 op = enum_ipcOpCode.CONST_START_CAMERA_STREAM_OP,
@@ -275,7 +281,9 @@ class nv_middlebox_cli(threading.Thread):
         if cam_name is None:
             return
         filter_arg = {'name' : cam_name}
+        db_mgr_obj.db_start_transaction()
         cam_cnt = db_mgr_obj.get_tbl_records_filterby_cnt(nv_camera, filter_arg)
+        db_mgr_obj.db_end_transaction()
         if cam_cnt == 0:
             self.nv_log_handler.error("No record found with given name %s"
                                       % cam_name)
@@ -302,7 +310,9 @@ class nv_middlebox_cli(threading.Thread):
             self.nv_log_handler.error("Failed to stop the camera at cli, %s", e)
 
     def nv_midbox_stop_all_stream(self):
+        db_mgr_obj.db_start_transaction()
         cam_records = db_mgr_obj.get_tbl_records(nv_camera)
+        db_mgr_obj.db_end_transaction()
         for cam_record in cam_records:
             cam_name = cam_record.name
             cam_ipcData = camera_data(op = enum_ipcOpCode.CONST_STOP_CAMERA_STREAM_OP,
@@ -325,24 +335,39 @@ class nv_middlebox_cli(threading.Thread):
                                           " %s", e)
 
     def list_midbox_system(self):
-        self.nv_log_handler.debug("Listing system & webserver details from DB")
-        if not db_mgr_obj.get_tbl_record_cnt(nv_midbox_system):
-            print_color_string("No record found in system table", color='red')
-            self.nv_log_handler.debug("Empty system table in the DB")
-            return
-        sys_record = db_mgr_obj.get_tbl_records(nv_midbox_system)
-        print_color_string(sys_record, color = "green")
-        if not db_mgr_obj.get_tbl_record_cnt(nv_webserver_system):
-            self.nv_log_handler.debug("Empty webserver table in the system")
-            return
-        web_records = db_mgr_obj.get_tbl_records(nv_webserver_system)
-        print_color_string(web_records, color = "blue")
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.nv_log_handler.debug("Listing system & webserver details "
+                                      "from DB")
+            if not db_mgr_obj.get_tbl_record_cnt(nv_midbox_system):
+                print_color_string("No record found in system table",
+                                   color='red')
+                self.nv_log_handler.debug("Empty system table in the DB")
+                return
+            sys_record = db_mgr_obj.get_tbl_records(nv_midbox_system)
+            print_color_string(sys_record, color = "green")
+            if not db_mgr_obj.get_tbl_record_cnt(nv_webserver_system):
+                self.nv_log_handler.debug("Empty webserver table in the system")
+                return
+            web_records = db_mgr_obj.get_tbl_records(nv_webserver_system)
+            print_color_string(web_records, color = "blue")
+        except Exception as e:
+            self.nv_log_handler.info("Failed to list the midbox system :%s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
 
     def nv_midbox_list_cameras(self):
-        if not db_mgr_obj.get_tbl_record_cnt(nv_camera):
-            print_color_string("No camera record found in the system", color='red')
-            self.nv_log_handler.debug("Camera table empty in the system")
-            return
-        cam_records = db_mgr_obj.get_tbl_records(nv_camera)
-        print_color_string(cam_records, color = "green")
-        self.nv_log_handler.debug("Listing all the cameras in the DB")
+        try:
+            db_mgr_obj.db_start_transaction()
+            if not db_mgr_obj.get_tbl_record_cnt(nv_camera):
+                print_color_string("No camera record found in the system",
+                                   color='red')
+                self.nv_log_handler.debug("Camera table empty in the system")
+                return
+            cam_records = db_mgr_obj.get_tbl_records(nv_camera)
+            print_color_string(cam_records, color = "green")
+            self.nv_log_handler.debug("Listing all the cameras in the DB")
+        except Exception as e:
+            self.nv_log_handler.info("Failed to list cameras : %s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()

@@ -37,9 +37,9 @@ class nv_midbox_conf():
             self.midbox_camera_init()
             self.nv_midbox_cli = nv_middlebox_cli()
             self.nv_midbox_cli.start()
-        except:
+        except Exception as e:
             self.nv_log_handler.error("Unknown exception while starting"
-                                      " the middlebox")
+                                      " the middlebox : %s", e)
             self.exit_all_threads()
 
     def midbox_camera_init(self):
@@ -48,13 +48,21 @@ class nv_midbox_conf():
         set them to OFF state unconditionally. start the live stream for each
          ** DO NOT INVOKE THE FUNCTION OTHER THAN AT THE TIME OF INIT **
         '''
-        cam_records = db_mgr_obj.get_tbl_records(nv_camera)
-        for camera in cam_records:
-            camera.status = enum_camStatus.CONST_CAMERA_READY
-            camera.live_url = None
-        db_mgr_obj.db_commit()
-        # Populate the webserver if configured.
-        db_mgr_obj.get_webserver_record()
+        try:
+            db_mgr_obj.db_start_transaction()
+            cam_records = db_mgr_obj.get_tbl_records(nv_camera)
+            for camera in cam_records:
+                camera.status = enum_camStatus.CONST_CAMERA_READY
+                camera.live_url = None
+            db_mgr_obj.db_commit()
+
+            # Populate the webserver if configured.
+            db_mgr_obj.get_webserver_record()
+        except Exception as e:
+            self.nv_log_handler.info("Failed in midbox init : %s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
+
         # start the live stream for all the configured cameras
         for camera in cam_records:
             if not camera.name:
@@ -80,7 +88,7 @@ class nv_midbox_conf():
                 self.nv_log_handler.error("Failed to start live stream of %s",
                                       camera.name)
 
-    def nv_midbox_allCam_status_update(self, status):
+    def __nv_midbox_allCam_status_update(self, status):
         '''
         Update all the camera status to 'status'
         '''
@@ -103,6 +111,16 @@ class nv_midbox_conf():
             camera.status = status
         db_mgr_obj.db_commit()
         GBL_WSCLIENT.send_notify()
+
+    def nv_midbox_allCam_status_update(self, status):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_allCam_status_update(status)
+        except Exception as e:
+            self.nv_log_handler.info("%s exception occured while updating "
+                                     "camera status", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
 
     def exit_all_threads(self):
         '''
@@ -202,7 +220,7 @@ class nv_midbox_conf():
         op = conf_obj.get_ipc_op()
         self.do_conf_op(op, CAM_OP_FNS, conf_obj)
 
-    def nv_midbox_add_camera(self, cam_obj):
+    def __nv_midbox_add_camera(self, cam_obj):
         nv_midbox_db_entry = db_mgr_obj.get_own_system_record()
         if nv_midbox_db_entry is None:
             self.nv_log_handler.error("System table is not available, "
@@ -267,15 +285,24 @@ class nv_midbox_conf():
                                pwd = None,
                                desc = None
                                )
-            self.nv_midbox_start_livestream(live_obj)
+            self.__nv_midbox_start_livestream(live_obj)
         except:
             self.nv_log_handler.error("Failed to start live stream of %s",
                                       cam_name)
         finally:
             GBL_WSCLIENT.send_notify()
 
-    def nv_midbox_del_camera(self, cam_obj):
-        self.nv_midbox_kill_stream(cam_obj)
+    def nv_midbox_add_camera(self, cam_obj):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_add_camera(cam_obj)
+        except Exception as e:
+            self.nv_log_handler.info("Failed to add camera : %s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
+
+    def __nv_midbox_del_camera(self, cam_obj):
+        self.__nv_midbox_kill_stream(cam_obj)
         cam_name = cam_obj.name
         filter_arg = {'name' : cam_name}
 
@@ -293,7 +320,7 @@ class nv_midbox_conf():
                                pwd = None,
                                desc = None
                                )
-            self.nv_midbox_stop_livestream(live_obj)
+            self.__nv_midbox_stop_livestream(live_obj)
         except:
             self.nv_log_handler.error("Failed to stop live stream of %s",
                                       cam_name)
@@ -311,7 +338,17 @@ class nv_midbox_conf():
         finally:
             GBL_WSCLIENT.send_notify()
 
-    def nv_midbox_start_stream(self, cam_obj):
+    def nv_midbox_del_camera(self, cam_obj):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_del_camera(cam_obj)
+        except Exception as e:
+            self.nv_log_handler.info("Exception occured while"
+                                     " deleting the camera : %s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
+
+    def __nv_midbox_start_stream(self, cam_obj):
         # TODO :: Validate the camera name
         cam_name = cam_obj.name
         filter_arg = {'name' : cam_name}
@@ -338,7 +375,17 @@ class nv_midbox_conf():
         db_mgr_obj.db_commit()
         GBL_WSCLIENT.send_notify()
 
-    def nv_midbox_stop_stream(self, cam_obj):
+    def nv_midbox_start_stream(self, cam_obj):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_start_stream(cam_obj)
+        except Exception as e:
+            self.nv_log_handler.info("Failed to start camera stream : %s",
+                                     e)
+        finally:
+            db_mgr_obj.db_end_transaction()
+
+    def __nv_midbox_stop_stream(self, cam_obj):
         cam_name = cam_obj.name
         filter_arg = {'name' : cam_name}
         cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera, filter_arg)
@@ -358,7 +405,16 @@ class nv_midbox_conf():
         self.nv_log_handler.debug("Stop streaming on camera %s" %cam_name)
         GBL_WSCLIENT.send_notify()
 
-    def nv_midbox_kill_stream(self, cam_obj):
+    def nv_midbox_stop_stream(self, cam_obj):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_stop_stream(cam_obj)
+        except Exception as e:
+            self.nv_log_handler.info("Failed to stop camera stream %s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
+
+    def __nv_midbox_kill_stream(self, cam_obj):
         '''
         Kill the camera streaming forcefully. Can be used while closing
         middlebox and deleting the camera from the middlebox
@@ -381,6 +437,15 @@ class nv_midbox_conf():
         except Exception as e:
             self.nv_log_handler.error("Failed to kill the camera streaming %s",
                                       e)
+
+    def nv_midbox_kill_stream(self, cam_obj):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_kill_stream(cam_obj)
+        except Exception as e:
+            self.nv_log_handler.info("Killing the camera failed : %s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
 
     def _is_nv_midbox_cam_status_update_valid(self, old_state, new_state):
         '''
@@ -433,7 +498,7 @@ class nv_midbox_conf():
             return False
         return True
 
-    def nv_midbox_cam_status_update(self, cam_obj):
+    def __nv_midbox_cam_status_update(self, cam_obj):
         '''
         Update the camera status flag in db on request. Possible use cases are
         1) streaming thread killed and ready to start streaming again.
@@ -456,6 +521,15 @@ class nv_midbox_conf():
         self.nv_log_handler.debug("%s camera has new status %s", cam_name,
                                   enum_camStatus.CAM_STATUS_STR[cam_obj.status])
 
+    def nv_midbox_cam_status_update(self, cam_obj):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_cam_status_update(cam_obj)
+        except Exception as e:
+            self.nv_log_handler.info("Failed to update the camera status %s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
+
     def nv_midbox_stop(self, obj):
         try:
             self.nv_log_handler.info("Quit the middlebox, "
@@ -464,10 +538,14 @@ class nv_midbox_conf():
             sys.exit()
         except SystemExit as e:
             raise e
-        except:
-            self.nv_log_handler.error("Unknown error while exiting the middlebox")
+        except Exception as e:
+            self.nv_log_handler.error("Unknown error while exiting the middlebox"
+                                      " : %s" % e)
 
-    def nv_midbox_start_livestream(self, cam_obj):
+    def __nv_midbox_start_livestream(self, cam_obj):
+        # No DB locks are acquired for starting the live-stream. The expectation
+        # is the caller must have taken necessary DB lock before calling this
+        # function.
         cam_name =  cam_obj.name
         filter_arg = {'name' : cam_name}
         cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera, filter_arg)
@@ -493,7 +571,18 @@ class nv_midbox_conf():
         # streaming is started. However this function get called as part of
         # add_camera and the notification will be called by that function.
 
-    def nv_midbox_stop_livestream(self, cam_obj):
+    def nv_midbox_start_livestream(self, cam_obj):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_start_livestream(cam_obj)
+        except Exception as e:
+            self.nv_log_handler.info("Failed to start live stream : %s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
+
+    def __nv_midbox_stop_livestream(self, cam_obj):
+        # No DB locks are acquired in this function. Caller must acquire the
+        # locks before stopping the live stream.
         cam_name =  cam_obj.name
         filter_arg = {'name' : cam_name}
         cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera, filter_arg)
@@ -519,7 +608,16 @@ class nv_midbox_conf():
         # livestream is stopped as part of camera delete. So the webclient
         # update is called in that function.
 
-    def nv_midbox_update_live_url(self, cam_obj):
+    def nv_midbox_stop_livestream(self, cam_obj):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_stop_livestream(cam_obj)
+        except Exception as e:
+            self.nv_log_handler.info("Failed to stop the livestream : %s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()
+
+    def __nv_midbox_update_live_url(self, cam_obj):
         cam_name = cam_obj.name
         filter_arg = {'name' : cam_name}
         cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera, filter_arg)
@@ -536,3 +634,11 @@ class nv_midbox_conf():
                                      cam_name)
         GBL_WSCLIENT.send_notify()
 
+    def nv_midbox_update_live_url(self, cam_obj):
+        try:
+            db_mgr_obj.db_start_transaction()
+            self.__nv_midbox_update_live_url(cam_obj)
+        except Exception as e:
+            self.nv_log_handler.info("Failed to update live url :%s", e)
+        finally:
+            db_mgr_obj.db_end_transaction()

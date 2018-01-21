@@ -92,7 +92,9 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
         cam_json = []
         GBL_WEBSOCK_POOL.add_connection(self)
         try:
+            db_mgr_obj.db_start_transaction()
             cameras = db_mgr_obj.get_tbl_records(nv_camera)
+            db_mgr_obj.db_end_transaction()
             if not cameras:
                 return
             for camera in cameras:
@@ -121,7 +123,9 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
     def send_all_camera_to_all_ws(self):
         cam_json = []
         try:
+            db_mgr_obj.db_start_transaction()
             cameras = db_mgr_obj.get_tbl_records(nv_camera)
+            db_mgr_obj.db_end_transaction()
             if not cameras:
                 # No cameras configured, return empty json.
                 cam_json.append({})

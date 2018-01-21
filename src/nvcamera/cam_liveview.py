@@ -167,8 +167,10 @@ class nv_cam_liveview():
         filter_arg = {'name' : self.cam_name}
         cam_record = None
         try:
+            db_mgr_obj.db_start_transaction()
             cam_record = db_mgr_obj.get_tbl_records_filterby_first(nv_camera,
                                                                    filter_arg)
+            db_mgr_obj.db_end_transaction()
         except:
             return False
         if cam_record is None:
