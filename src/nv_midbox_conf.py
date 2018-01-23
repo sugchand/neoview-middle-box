@@ -127,15 +127,20 @@ class nv_midbox_conf():
         Function to stop all the threads that are started by the midbox conf.
         cli, relay manager live and all camera threads are stopped.
         '''
-        self.nv_midbox_cli.stop()
-        self.nv_relay_mgr.relay_stop()
+        if self.nv_midbox_cli:
+            self.nv_midbox_cli.stop()
+        if self.nv_relay_mgr:
+            self.nv_relay_mgr.relay_stop()
         # Set cameras to deferred while stopping all the threads.
         self.nv_midbox_allCam_status_update(enum_camStatus.CONST_CAMERA_DEFERRED)
         # Stop all the live streaming threads.
-        self.cam_thread_mgr.stop_all_camlive()
-        self.cam_thread_mgr.kill_all_camera_threads()
-        self.nv_relay_mgr.relay_join()
-        self.cam_thread_mgr.join_all_camera_threads()
+        if self.cam_thread_mgr:
+            self.cam_thread_mgr.stop_all_camlive()
+            self.cam_thread_mgr.kill_all_camera_threads()
+        if self.nv_relay_mgr:
+            self.nv_relay_mgr.relay_join()
+        if self.cam_thread_mgr:
+            self.cam_thread_mgr.join_all_camera_threads()
         #Set camera thread to ready before exiting..
         self.nv_midbox_allCam_status_update(enum_camStatus.CONST_CAMERA_READY)
         db_mgr_obj.teardown_session()
