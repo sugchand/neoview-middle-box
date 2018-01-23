@@ -57,17 +57,24 @@ class cam_handler():
         out_file_path = NV_MID_BOX_CAM_STREAM_DIR.rstrip('/') + "/" +\
                         self.cam_dir + "/"
         self.os_context.make_dir(out_file_path)
-        while not stop_event.is_set():
+        try:
+            while not stop_event.is_set():
             # Camera streaming loop to stream from camera, cut and store in
             # multiple files. No error validation here, the files might be
             # created without any video data. The restreaming server validates
             # the files later.
-            out_file = out_file_path +\
+                out_file = out_file_path +\
                     time.strftime("%d-%b-%Y:%H-%M-%S", time.gmtime()) + ".mp4"
-            vlc_args = vlc_out_opts + [":sout=#file{dst=" + out_file + "}"]
-            self.nv_log_handler.debug("Streaming  to a file %s" %str(vlc_args))
-            self.vlc_thread = self.os_context.execute_cmd_bg("cvlc", vlc_args)
-            self.os_context.wait_cmd_complete(self.vlc_thread)
+                vlc_args = vlc_out_opts + [":sout=#file{dst=" + out_file + "}"]
+                self.nv_log_handler.debug("Streaming  to a file %s" %
+                                          str(vlc_args))
+                self.vlc_thread = self.os_context.execute_cmd_bg("cvlc",
+                                                                 vlc_args)
+                self.os_context.wait_cmd_complete(self.vlc_thread)
+        except Exception as e:
+            self.nv_log_handler.info("Streaming thread is killed abruptly"
+                            "on streaming from camera %s" % self.name)
+
         # Delete the last file as it may be not safe to share.
         self.nv_log_handler.debug("delete last video snip %s before exiting,",
                                   out_file)
