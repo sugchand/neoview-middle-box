@@ -161,6 +161,7 @@ class nv_middlebox_cli(threading.Thread):
               ip_addr + ":" + port +\
               " RTSP/1.0\r\nCSeq: 2\r\nAuthorization: Basic YWRtaW46c3VndSZkZWVwdQ==\r\n\r\n"
         byte_req = req.encode()
+        data = ""
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(10)
@@ -174,8 +175,9 @@ class nv_middlebox_cli(threading.Thread):
         except Exception as e:
             self.nv_log_handler.error("Failed to make rtsp connection to camera"
                                       " : %s" % e)
+            return False
         self.nv_log_handler.info("RTSP is not supported by the camera"
-                                        "camera response : %s", data)
+                                        " camera response : %s", data)
         return False
 
     def validate_cam_details(self, name, ip_addr, mac_addr, port, uname, pwd):
