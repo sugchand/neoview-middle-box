@@ -20,6 +20,7 @@ from src.nvdb.nvdb_manager import db_mgr_obj
 from src.nv_midbox_websock.nv_midbox_ws import nv_midbox_ws
 # Import all the configuration values
 from src.nv_midbox_conf import nv_midbox_conf
+from src.nv_lib.nv_watchdog import nv_watchdog
 
 class nv_middlebox():
     def __init__(self):
@@ -41,6 +42,8 @@ class nv_middlebox():
             self.init_db()
             self.nv_websock = nv_midbox_ws()
             self.nv_websock.start()
+            self.watchdog = nv_watchdog()
+            self.watchdog.start()
             self.nv_conf = nv_midbox_conf()
             self.nv_conf.do_midbox_conf()
         finally:
@@ -48,6 +51,8 @@ class nv_middlebox():
                 self.nv_conf.exit_all_threads()
             if self.nv_websock:
                 self.nv_websock.stop_ws()
+            if self.watchdog:
+                self.watchdog.stop_watchdog()
 
 if __name__ == "__main__":
     if platform.system() != 'Linux':
