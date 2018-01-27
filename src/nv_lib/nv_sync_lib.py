@@ -8,6 +8,8 @@ __copyright__ = "Copyright (C) The neoview team."
 __license__ = "GNU Lesser General Public License"
 __version__ = "1.0"
 
+from time import time
+from threading import current_thread
 from threading import Lock
 from src.nv_logger import nv_logger
 from queue import Queue, Full, Empty
@@ -106,8 +108,14 @@ class nv_sync_lib():
             'name1' : 'obj1',
             'name2' : 'obj2'
         }
+        or dictionary can be like
+        {
+            'name1' : ['lock-obj1', thread-name, lock-time],
+            'name2' : ['lock-obj2', thread-name, lock-time]
+        }
         '''
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
+        # Mutex dictionary has a list of elements,
         self.mutex_dic = {}
         self.rlock_dic = {}
         pass
@@ -121,26 +129,42 @@ class nv_sync_lib():
         if not name in self.mutex_dic:
             # The mutex lock is not created , lets create one.
             try:
-                self.mutex_dic[name] = Lock()
+                self.mutex_dic[name] = [Lock()]
             except Exception as e:
                 self.nv_log_handler.error("Failed to acquire lock %s"
                                           % name)
                 raise e
-        self.mutex_dic[name].acquire()
+        self.mutex_dic[name][0].acquire()
+        #Update the lock with thread and time details.
+        # Now the mutex dictionary element will be
+        #  {'lock_name' : [lock_obj, thread_name, lock_time}
+        thread_name = current_thread().getName()
+        lock_time = time()
+        self.mutex_dic[name] = [self.mutex_dic[name][0],thread_name, lock_time]
 
     def mutex_unlock(self, name):
         if not name in self.mutex_dic:
             self.nv_log_handler.error("Cannot unlock non-existent lock %s"
                                       % name)
             return
-        self.mutex_dic[name].release()
+        if len(self.mutex_dic[name]) == 3:
+            self.mutex_dic[name][1] = self.mutex_dic[name][2] = 0
+        self.mutex_dic[name][0].release()
 
     def is_mutex_locked(self, name):
         if not name in self.mutex_dic:
             self.nv_log_handler.error("Cannot check status of non-existent lock"
                                       % name)
             return
-        self.mutex_dic[name].locked()
+        self.mutex_dic[name][0].locked()
+
+    def get_mutex_lock_dic(self):
+        '''
+        Function that return all the created mutex locks. The dictionary is
+        very dynamic and can change at run time. This function doesnt gurantee
+        the return value is valid for all the time.
+        '''
+        return self.mutex_dic
 
     def rlock_acquire(self, name):
         '''
@@ -149,12 +173,18 @@ class nv_sync_lib():
         '''
         if not name in self.rlock_dic:
             try:
-                self.rlock_dic[name] = RLock()
+                self.rlock_dic[name] = [RLock()]
             except Exception as e:
                 self.nv_log_handler.error("Failed to acquire Rlock : %s" % name)
                 del self.rlock_dic[name]
                 raise e
-        self.rlock_dic[name].acquire()
+        #Update the rlock with thread and time details.
+        # Now the mutex dictionary element will be
+        #  {'lock_name' : [lock_obj, thread_name, lock_time}
+        self.rlock_dic[name][0].acquire()
+        thread_name = current_thread().getName()
+        lock_time = time()
+        self.rlock_dic[name] = [self.rlock_dic[name][0], thread_name, lock_time]
 
     def rlock_release(self, name):
         '''
@@ -165,13 +195,17 @@ class nv_sync_lib():
             self.nv_log_handler.error("Cannot release a non-existent lock %s"
                                       % name)
             return
-        self.rlock_dic[name].release()
+        if len(self.rlock_dic[name]) == 3:
+            self.rlock_dic[name][1] = self.rlock_dic[name][2] = 0
+        self.rlock_dic[name][0].release()
 
-    def list_mutex_locks(self):
+    def get_rlock_dic(self):
         '''
-        debug function to display all the created mutex locks at the moment
+        Function to return all the created rlock objects in a dictionary format.
+        This dictionary is valid only at the time of function execution. Other
+        threads might change it when using the values in dictionary
         '''
-        pass
+        return self.rlock_dic
 
 GBL_NV_SYNC_OBJ = nv_sync_lib()
 
