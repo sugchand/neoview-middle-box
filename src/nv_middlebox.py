@@ -25,6 +25,9 @@ class nv_middlebox():
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
         self.nv_cli_mgr = None # Cli thread to read user inputs.
+        self.nv_conf = None
+        self.nv_websock = None
+        self.watchdog = None
 
     def init_db(self):
         self.nv_log_handler.info("Initilizing the middlebox DB")

@@ -30,6 +30,9 @@ class nv_midbox_conf():
 
     def __init__(self):
         self.nv_log_handler = nv_logger(self.__class__.__name__).get_logger()
+        self.cam_thread_mgr = None
+        self.nv_midbox_cli = None
+        self.nv_relay_mgr = None
         self.cam_thread_mgr = thread_manager()
         try:
             self.nv_relay_mgr = relay_main()
