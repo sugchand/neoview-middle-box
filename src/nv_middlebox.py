@@ -32,8 +32,12 @@ class nv_middlebox():
 
     def init_db(self):
         self.nv_log_handler.info("Initilizing the middlebox DB")
-        db_mgr_obj.setup_session()
-        db_mgr_obj.create_system_record()
+        try:
+            db_mgr_obj.setup_session()
+            db_mgr_obj.create_system_record()
+        except Exception as e:
+            self.nv_log_handler.error("Failed to initilized the middlebox DB")
+            raise e
 
     def run(self):
         try:
@@ -46,7 +50,7 @@ class nv_middlebox():
             self.watchdog.start()
             self.nv_conf = nv_midbox_conf()
             self.nv_conf.do_midbox_conf()
-        finally:
+        except:
             if self.nv_conf:
                 self.nv_conf.exit_all_threads()
             if self.nv_websock:
