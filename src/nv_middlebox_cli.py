@@ -13,6 +13,7 @@ import socket
 import struct
 from getpass import getpass
 
+from base64 import b64encode
 from src.nv_logger import nv_logger
 from src.nvdb.nvdb_manager import db_mgr_obj, nv_midbox_system, enum_camStatus,\
     nv_webserver_system
@@ -157,10 +158,14 @@ class nv_middlebox_cli(threading.Thread):
         camera can support RTSP, False otherwise.
         All the function parameters are string type.
         '''
+        user_pwd = uname + ":" + pwd
+        utf_user_pwd = user_pwd.encode('utf-8')
+        b64_encode_uname_pwd = b64encode(utf_user_pwd)
         req = "DESCRIBE rtsp//" + uname + ":" + pwd + "@" +\
               ip_addr + ":" + port +\
-              " RTSP/1.0\r\nCSeq: 2\r\nAuthorization: Basic YWRtaW46c3VndSZkZWVwdQ==\r\n\r\n"
+              " RTSP/1.0\r\nCSeq: 2\r\nAuthorization: Basic "
         byte_req = req.encode()
+        byte_req += b64_encode_uname_pwd + "\r\n\r\n".encode()
         data = ""
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
