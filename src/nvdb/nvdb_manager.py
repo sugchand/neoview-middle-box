@@ -149,6 +149,7 @@ class db_manager():
             return
         try:
             self.Session.remove()
+            self.db_session = None
         except Exception as e:
             self.nv_log_handler.error("Failed to teardown DB session %s", e)
 
