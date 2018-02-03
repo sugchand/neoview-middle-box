@@ -44,6 +44,7 @@ class nv_midbox_conf():
             self.nv_log_handler.error("Unknown exception while starting"
                                       " the middlebox : %s", e)
             self.exit_all_threads()
+            raise e
 
     def midbox_camera_init(self):
         '''
