@@ -99,7 +99,6 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
                                         " when opening websocket in ws")
         finally:
             db_mgr_obj.db_end_transaction()
-            return
         try:
             if not cameras:
                 return
@@ -136,7 +135,6 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
                                          " from the db in ws process.")
         finally:
             db_mgr_obj.db_end_transaction()
-            return
         try:
             if not cameras:
                 # No cameras configured, return empty json.
