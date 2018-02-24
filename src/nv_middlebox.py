@@ -13,7 +13,7 @@ import os
 import psutil
 
 curr_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.abspath(os.path.join(curr_dir, os.pardir)))
+sys.path.insert(0, os.path.abspath(os.path.join(curr_dir, os.pardir)))
 
 from src.nv_logger import nv_logger,default_nv_log_handler
 from src.nvdb.nvdb_manager import db_mgr_obj
