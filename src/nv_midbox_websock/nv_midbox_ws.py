@@ -94,7 +94,13 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
         try:
             db_mgr_obj.db_start_transaction()
             cameras = db_mgr_obj.get_tbl_records(nv_camera)
+        except Exception as e:
+            default_nv_log_handler.info("Failed to get camera details from DB"
+                                        " when opening websocket in ws")
+        finally:
             db_mgr_obj.db_end_transaction()
+            return
+        try:
             if not cameras:
                 return
             for camera in cameras:
@@ -125,7 +131,13 @@ class UserWebSocketHandler(tornado.websocket.WebSocketHandler):
         try:
             db_mgr_obj.db_start_transaction()
             cameras = db_mgr_obj.get_tbl_records(nv_camera)
+        except Exception as e:
+            default_nv_log_handler.info("Failed to collecte camera details"
+                                         " from the db in ws process.")
+        finally:
             db_mgr_obj.db_end_transaction()
+            return
+        try:
             if not cameras:
                 # No cameras configured, return empty json.
                 cam_json.append({})

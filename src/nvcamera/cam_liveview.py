@@ -172,6 +172,8 @@ class nv_cam_liveview():
                                                                    filter_arg)
             db_mgr_obj.db_end_transaction()
         except:
+            # Release the db lock in error in case its not yet released
+            db_mgr_obj.db_end_transaction()
             return False
         if cam_record is None:
             self.nv_log_handler.error("Empty camera record for %s, Cannot read",
