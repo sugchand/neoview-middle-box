@@ -1,0 +1,7 @@
+recursive-include src *.py
+include README.md
+include LICENSE
+include Documentation/Neoview_middlebox_user_guide.pdf
+include requirements.txt
+graft ssl_data
+graft src/nv_midbox_websock/templates
