@@ -83,6 +83,11 @@ installation can be done as below on a Ubuntu(Debian) machine.
 
   `pip3 install cryptography`
 
+* ??? DO NOT USE THE SSH CERTs IN THE REPO. ???. Create new cert and key as
+  below.
+
+  `openssl req -newkey rsa:2048 -nodes -keyout ssl_data/nvmidbox.key -x509 -days 365 -out ssl_data/nvmidbox.cert`
+ 
 * [OPTIONAL] Install the virtual environment if not present. This step is needed only when
 middlebox is running in virtual environment.
 

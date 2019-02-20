@@ -1,4 +1,4 @@
-paramiko==2.4.0
+paramiko==2.4.2
 psutil==5.4.2
 SQLAlchemy==1.2.0b3
 termcolor==1.1.0
